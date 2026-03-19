@@ -892,8 +892,8 @@ function renderDashboard(){
   }
 
   // Reminder status for this hotel
-  const remSt = getCountStatus(currentHotelId);
-  const remS  = getReminderSettings(currentHotelId);
+  const remSt = currentHotelId ? getCountStatus(currentHotelId) : 'ok';
+  const remS  = currentHotelId ? getReminderSettings(currentHotelId) : REMINDER_DEFAULTS;
   const remDays = daysSince(remS.lastCount);
   if(remSt==='overdue'){
     html+=`<div style="display:flex;align-items:center;gap:10px;background:var(--red-l);border:1px solid #f5c0bb;border-radius:var(--r);padding:11px 14px;margin-bottom:18px;font-size:13px;color:var(--red);">
@@ -2000,6 +2000,7 @@ function setAllDaily(rooms){
 const REMINDER_DEFAULTS = { countFreq: 3, lastCount: null }; // every 3 days
 
 function getReminderSettings(hotelId){
+  if(!hotelId) return {...REMINDER_DEFAULTS};
   const key = 'hs_remind_' + hotelId;
   try { return JSON.parse(localStorage.getItem(key)) || {...REMINDER_DEFAULTS}; }
   catch(e){ return {...REMINDER_DEFAULTS}; }
@@ -2036,27 +2037,34 @@ function getCountStatus(hotelId){
 }
 
 function updateReminderBadge(){
-  // Count how many hotels need attention
-  let needCount = 0;
-  DB.hotels.forEach(h => {
-    const st = getCountStatus(h.id);
-    if(st === 'due' || st === 'overdue') needCount++;
-  });
-  const alertItems = DB.inventory.filter(i=>stockStatus(i)!=='ok').length;
-  const parItems = DB.inventory.filter(i=>{
-    if(!i.parType||i.parType==='none') return false;
-    const h = DB.hotels.find(x=>x.id===i.hotelId);
-    const rooms = h ? Math.round(h.rooms * 0.75) : 0;
-    const needed = i.parType==='daily' ? rooms*i.parQty*7 : rooms*i.parQty/2;
-    return i.current < needed * 1.1;
-  }).length;
-
-  const total = needCount + (alertItems > 0 ? 1 : 0) + (parItems > 0 ? 1 : 0);
-  const badge = document.getElementById('sb-remind-badge');
-  if(badge){
-    badge.textContent = total;
-    badge.style.display = total > 0 ? 'inline' : 'none';
-  }
+  try {
+    if(!DB || !DB.hotels || !currentUser) return;
+    let needCount = 0;
+    DB.hotels.forEach(h => {
+      try {
+        const st = getCountStatus(h.id);
+        if(st === 'due' || st === 'overdue') needCount++;
+      } catch(e){}
+    });
+    const alertItems = DB.inventory ? DB.inventory.filter(i=>{
+      try { return stockStatus(i)!=='ok'; } catch(e){ return false; }
+    }).length : 0;
+    const parItems = DB.inventory ? DB.inventory.filter(i=>{
+      try {
+        if(!i.parType||i.parType==='none'||!i.parQty) return false;
+        const h = DB.hotels.find(x=>x.id===i.hotelId);
+        const rooms = h ? Math.round(h.rooms * 0.75) : 0;
+        const needed = i.parType==='daily' ? rooms*i.parQty*7 : rooms*i.parQty/2;
+        return i.current < needed * 1.1;
+      } catch(e){ return false; }
+    }).length : 0;
+    const total = needCount + (alertItems > 0 ? 1 : 0) + (parItems > 0 ? 1 : 0);
+    const badge = document.getElementById('sb-remind-badge');
+    if(badge){
+      badge.textContent = total;
+      badge.style.display = total > 0 ? 'inline' : 'none';
+    }
+  } catch(e){ console.warn('updateReminderBadge error:', e); }
 }
 
 // Show login reminder banner for manager
