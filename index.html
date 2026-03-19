@@ -1977,6 +1977,12 @@ function renderUsers(){
 
   let html=`<div class="toolbar">
     <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="usr-search" placeholder="Search accounts..." value="${search}" oninput="renderUsers()"></div>
+    <button class="btn btn-primary" onclick="openUserModal()">+ Create Account</button>
+  </div>
+  <div style="background:var(--blue-l);border:1px solid #b0c8f0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:14px;">
+    ${isAdmin
+      ? '👑 As <strong>Super Admin</strong> you can create General Manager and Inventory Manager accounts for any hotel.'
+      : '🏨 As <strong>General Manager</strong> you can create Inventory Manager accounts for <strong>your hotel only</strong>.'}
   </div>
   <div class="card"><div class="table-wrap"><table>
     <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Hotel</th><th>Phone</th><th>Created</th><th>Status</th><th></th></tr></thead>
@@ -2034,22 +2040,46 @@ function rolePermCard(icon,title,role,p1,p2,p3,p4,p5,p6){
 function openUserModal(id){
   editingUserId=id||null;
   const u=id?DB.users.find(x=>x.id===id):null;
+  const isAdmin=currentUser.role==='admin';
+  const isGM=currentUser.role==='gm';
+
   document.getElementById('m-user-title').textContent=id?'Edit Account':'Create Account';
   document.getElementById('u-name').value=u?u.name:'';
   document.getElementById('u-email').value=u?u.email:'';
-  document.getElementById('u-phone').value=u?u.phone:'';
+  document.getElementById('u-phone').value=u?u.phone||'':'';
   document.getElementById('u-pass').value='';
   document.getElementById('u-pass2').value='';
-  // Role options
+
+  // Role dropdown
   const roleEl=document.getElementById('u-role');
   const adminOpt=document.getElementById('u-role-admin-opt');
-  if(currentUser.role==='admin'){adminOpt.style.display='';} else {adminOpt.style.display='none';}
-  roleEl.value=u?u.role:(currentUser.role==='gm'?'manager':'gm');
+
+  if(isAdmin){
+    // Admin can create any role
+    adminOpt.style.display='';
+    roleEl.disabled=false;
+    roleEl.value=u?u.role:'gm';
+  } else if(isGM){
+    // GM can only create Inventory Manager — lock the dropdown
+    adminOpt.style.display='none';
+    roleEl.value='manager';
+    roleEl.disabled=true;
+  }
+
   // Hotel selector
   const hsel=document.getElementById('u-hotel');
-  hsel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
-  if(u&&u.hotelId) hsel.value=u.hotelId;
-  else if(currentUser.hotelId) hsel.value=currentUser.hotelId;
+  if(isAdmin){
+    // Admin sees all hotels
+    hsel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+    if(u&&u.hotelId) hsel.value=u.hotelId;
+  } else if(isGM){
+    // GM only sees their own hotel — locked
+    const myHotel=DB.hotels.find(h=>h.id===currentHotelId);
+    hsel.innerHTML=myHotel?`<option value="${myHotel.id}">${myHotel.name}</option>`:'';
+    hsel.value=currentHotelId;
+    hsel.disabled=true;
+  }
+
   updateUserFormRole();
   openM('m-user');
 }
@@ -2081,8 +2111,13 @@ function saveUser(){
   const email=v('u-email').trim().toLowerCase();
   const pass=v('u-pass');
   const pass2=v('u-pass2');
-  const role=v('u-role');
-  const hotelId=role==='admin'?null:parseInt(v('u-hotel'))||null;
+  const isGM=currentUser.role==='gm';
+
+  // If GM, force role=manager and hotelId=their hotel (fields are disabled)
+  const roleEl=document.getElementById('u-role');
+  const hselEl=document.getElementById('u-hotel');
+  const role=isGM?'manager':(roleEl?roleEl.value:'gm');
+  const hotelId=role==='admin'?null:(isGM?currentHotelId:(parseInt(hselEl?hselEl.value:0)||null));
 
   // Validation
   if(!name){showToast('Full name is required','error');return;}
@@ -2091,40 +2126,38 @@ function saveUser(){
   if(!editingUserId&&!pass){showToast('Password is required','error');return;}
   if(pass&&pass!==pass2){showToast('Passwords do not match','error');return;}
   if(pass&&pass.length<6){showToast('Password must be at least 6 characters','error');return;}
-  if(!editingUserId&&role!=='admin'&&!hotelId){showToast('Please select a hotel for this user','error');return;}
+  if(role!=='admin'&&!hotelId){showToast('Please select a hotel for this user','error');return;}
 
   // Check duplicate email
   const dupCheck=DB.users.find(u=>u.email.toLowerCase()===email&&u.id!==editingUserId);
-  if(dupCheck){showToast('This email is already in use by another account','error');return;}
+  if(dupCheck){showToast('This email is already in use','error');return;}
 
   if(editingUserId){
     const u=DB.users.find(x=>x.id===editingUserId);
     if(!u){showToast('User not found','error');return;}
     u.name=name;u.email=email;u.role=role;
     u.hotelId=role==='admin'?null:hotelId;
-    u.phone=v('u-phone');
+    u.phone=v('u-phone')||'';
     if(pass) u.password=pass;
     showToast(`Account updated for ${name}!`,'success');
   } else {
-    // Make sure ID is unique
     const maxId=DB.users.length?Math.max(...DB.users.map(u=>Number(u.id)||0)):0;
     const newId=maxId+1;
     DB.users.push({
-      id:newId,
-      name,email,
-      password:pass,
-      role,
+      id:newId,name,email,password:pass,role,
       hotelId:role==='admin'?null:hotelId,
       phone:v('u-phone')||'',
-      active:true,
-      created:todayStr()
+      active:true,created:todayStr()
     });
     nextIds.user=newId+1;
     showToast(`Account created for ${name}!`,'success');
   }
+  // Re-enable disabled fields for next open
+  if(roleEl) roleEl.disabled=false;
+  if(hselEl) hselEl.disabled=false;
   closeM('m-user');
   renderUsers();
-  gsAutoSync(); // Save to Google Sheets immediately
+  gsAutoSync();
 }
 
 function toggleUserActive(id){
