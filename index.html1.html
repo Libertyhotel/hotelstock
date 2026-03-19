@@ -1,0 +1,2838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HotelStock Pro — Multi-Property Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f6f4ef;
+  --surface:#ffffff;
+  --surface2:#f0ece3;
+  --surface3:#e8e2d6;
+  --border:#ddd7ca;
+  --border2:#c8bfad;
+  --text:#1c1a16;
+  --text2:#5c5449;
+  --text3:#9a8f80;
+  --gold:#b8860b;--gold-l:#faf0d0;--gold-d:#8a6400;
+  --red:#b83232;--red-l:#fdeaea;
+  --green:#1a7a45;--green-l:#e6f5ec;
+  --blue:#1a4fa0;--blue-l:#e6edf9;
+  --orange:#c85a10;--orange-l:#fef0e4;
+  --purple:#5a3ab8;--purple-l:#f0ecfd;
+  --r:10px;--r-lg:14px;--r-xl:20px;
+  --sh:0 2px 12px rgba(0,0,0,0.07);
+  --sh-lg:0 8px 40px rgba(0,0,0,0.13);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;}
+
+/* ── LOGIN ── */
+#screen-login{align-items:center;justify-content:center;background:linear-gradient(135deg,#1c1a16 0%,#2e2a20 50%,#1a1714 100%);position:relative;overflow:hidden;}
+#screen-login::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23b8860b' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
+.login-box{background:var(--surface);border-radius:var(--r-xl);padding:48px 44px;width:420px;max-width:95vw;box-shadow:var(--sh-lg);position:relative;z-index:1;}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-logo-mark{width:56px;height:56px;background:var(--gold);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;}
+.login-brand{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);}
+.login-sub{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+
+/* ── APP LAYOUT ── */
+#screen-app{flex-direction:row;}
+.sidebar{width:240px;background:var(--text);color:#fff;display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:100;transition:transform 0.3s;}
+.sb-brand{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sb-brand-name{font-family:'DM Serif Display',serif;font-size:20px;color:#d4a843;}
+.sb-brand-sub{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1.2px;margin-top:1px;}
+.sb-hotel-selector{padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sb-hotel-label{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.sb-hotel-select{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:6px;padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.sb-hotel-select option{background:#2e2a20;color:#fff;}
+.sb-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.sb-section{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.25);padding:10px 18px 4px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;color:rgba(255,255,255,0.6);font-size:13px;font-weight:400;transition:all 0.15s;border-left:3px solid transparent;}
+.sb-item:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.sb-item.active{background:rgba(212,168,67,0.13);color:#d4a843;border-left-color:#d4a843;font-weight:500;}
+.sb-item-icon{width:17px;text-align:center;font-size:14px;flex-shrink:0;}
+.sb-item-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;}
+.sb-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.08);}
+.sb-user{display:flex;align-items:center;gap:9px;}
+.sb-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
+.sb-user-name{font-size:12px;color:rgba(255,255,255,0.85);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-role{font-size:10px;color:rgba(255,255,255,0.3);}
+.sb-logout{margin-top:8px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.4);padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;}
+.sb-logout:hover{border-color:rgba(255,255,255,0.3);color:#fff;}
+
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:17px;}
+.topbar-hotel-tag{font-size:11px;background:var(--gold-l);color:var(--gold-d);padding:3px 10px;border-radius:20px;font-weight:600;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.alert-pill{background:var(--red-l);color:var(--red);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;cursor:pointer;white-space:nowrap;}
+.content{padding:22px 24px;flex:1;}
+
+/* ── VIEWS ── */
+.view{display:none;animation:fadeIn 0.2s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── COMPONENTS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s;white-space:nowrap;}
+.btn-primary{background:var(--gold);color:#fff;}.btn-primary:hover{background:var(--gold-d);}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}.btn-secondary:hover{background:var(--surface2);}
+.btn-danger{background:var(--red-l);color:var(--red);}.btn-danger:hover{background:#f5d0d0;}
+.btn-ghost{background:none;color:var(--text2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--surface2);}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:6px;}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--text2);padding:5px 9px;border-radius:var(--r);cursor:pointer;font-size:13px;}.btn-icon:hover{background:var(--surface2);}
+
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-weight:600;font-size:13.5px;}
+.card-body{padding:18px;}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:14px 18px;}
+.stat-icon{font-size:18px;margin-bottom:6px;}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:500;}
+.stat-value{font-size:26px;font-weight:600;font-family:'DM Serif Display',serif;margin:3px 0 1px;}
+.stat-sub{font-size:11px;color:var(--text3);}
+.stat-red .stat-value{color:var(--red);}
+.stat-orange .stat-value{color:var(--orange);}
+.stat-green .stat-value{color:var(--green);}
+.stat-gold .stat-value{color:var(--gold-d);}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:9px 13px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);}
+td{padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#faf8f4;}
+.table-wrap{overflow-x:auto;}
+
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-critical{background:var(--red-l);color:var(--red);}
+.badge-low{background:var(--orange-l);color:var(--orange);}
+.badge-ok{background:var(--green-l);color:var(--green);}
+.badge-pending{background:var(--blue-l);color:var(--blue);}
+.badge-delivered{background:var(--green-l);color:var(--green);}
+.badge-cancelled{background:var(--surface3);color:var(--text3);}
+.badge-admin{background:#1c1a16;color:#d4a843;}
+.badge-gm{background:var(--purple-l);color:var(--purple);}
+.badge-manager{background:var(--blue-l);color:var(--blue);}
+.badge-active{background:var(--green-l);color:var(--green);}
+.badge-inactive{background:var(--surface3);color:var(--text3);}
+
+.stock-bar-wrap{display:flex;align-items:center;gap:7px;}
+.stock-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:50px;}
+.stock-fill{height:100%;border-radius:3px;}
+.fill-critical{background:var(--red);}
+.fill-low{background:var(--orange);}
+.fill-ok{background:var(--green);}
+
+.cat-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:var(--gold-l);color:var(--gold-d);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg.full{grid-column:1/-1;}
+label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;}
+input,select,textarea{padding:8px 11px;border:1px solid var(--border);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface);transition:border 0.15s;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,134,11,0.1);}
+textarea{resize:vertical;min-height:70px;}
+.input-hint{font-size:11px;color:var(--text3);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.48);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:var(--r-lg);width:560px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:var(--sh-lg);transform:translateY(18px);transition:transform 0.2s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-lg{width:680px;}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:17px;}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1;padding:2px 6px;}
+.modal-body{padding:18px 22px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface);}
+
+/* TABS */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab{padding:9px 16px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--gold-d);border-bottom-color:var(--gold);font-weight:600;}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:180px;}
+.search-wrap input{padding-left:30px;}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;}
+.filter-sel{width:auto;flex-shrink:0;}
+
+/* ALERT BANNER */
+.alert-banner{display:flex;align-items:center;gap:10px;background:var(--red-l);border:1px solid #f5c0bb;border-radius:var(--r);padding:11px 14px;margin-bottom:18px;font-size:13px;color:var(--red);}
+
+/* ACTIVITY */
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.activity-time{font-size:11px;color:var(--text3);margin-top:1px;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:2fr 1fr;gap:18px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;z-index:1000;background:var(--text);color:#fff;padding:11px 16px;border-radius:var(--r);font-size:13px;box-shadow:var(--sh-lg);transform:translateY(70px);opacity:0;transition:all 0.3s;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.toast-success{background:var(--green);}
+.toast.toast-error{background:var(--red);}
+
+/* ROLE CARD */
+.role-card{border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.role-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+
+/* HOTEL CARD */
+.hotel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:box-shadow 0.15s;}
+.hotel-card:hover{box-shadow:var(--sh-lg);}
+.hotel-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.hotel-initial{width:44px;height:44px;border-radius:10px;background:var(--gold-l);color:var(--gold-d);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;}
+.hotel-name{font-weight:600;font-size:14px;margin-bottom:2px;}
+.hotel-location{font-size:11px;color:var(--text3);}
+.hotel-stats{display:flex;gap:12px;font-size:12px;color:var(--text2);}
+
+/* USER TABLE AVATAR */
+.u-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;}
+
+/* PASSWORD STRENGTH */
+.pw-strength{height:3px;border-radius:2px;margin-top:4px;transition:all 0.3s;}
+
+/* DIVIDER */
+hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:36px;color:var(--text3);}
+.empty-icon{font-size:30px;margin-bottom:8px;}
+
+.row-actions{display:flex;gap:5px;opacity:0;transition:opacity 0.15s;}
+tr:hover .row-actions{opacity:1;}
+
+/* OVERVIEW GRID */
+.hotels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+
+.section-hd{font-family:'DM Serif Display',serif;font-size:15px;margin-bottom:12px;}
+
+.info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-label{color:var(--text3);}
+
+.spend-bar-wrap{margin-bottom:10px;}
+.spend-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;}
+.spend-bar-bg{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.spend-bar-fill{height:100%;border-radius:3px;}
+
+/* PERMISSION TAG */
+.perm-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;margin:2px;}
+.perm-yes{background:var(--green-l);color:var(--green);}
+.perm-no{background:var(--surface3);color:var(--text3);}
+
+input[type=password]{letter-spacing:2px;}
+
+/* ── STOCK OVERVIEW ── */
+.stock-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px;}
+.stock-item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;transition:box-shadow 0.15s;}
+.stock-item-card:hover{box-shadow:var(--sh-lg);}
+.stock-item-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px;}
+.stock-item-card.critical::before{background:var(--red);}
+.stock-item-card.low::before{background:var(--orange);}
+.stock-item-card.ok::before{background:var(--green);}
+.sic-cat{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:600;margin-bottom:4px;}
+.sic-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;line-height:1.3;}
+.sic-qty{font-size:28px;font-weight:700;font-family:'DM Serif Display',serif;line-height:1;}
+.sic-unit{font-size:11px;color:var(--text3);margin-left:3px;}
+.sic-bar{margin:8px 0 6px;}
+.sic-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);}
+.sic-value{font-size:11px;font-weight:600;color:var(--text2);margin-top:4px;}
+
+/* SUMMARY VALUE STRIP */
+.value-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.vs-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:center;}
+.vs-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:500;margin-bottom:4px;}
+.vs-value{font-size:20px;font-weight:700;font-family:'DM Serif Display',serif;}
+.vs-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* COMBINED ADMIN TABLE */
+.hotel-section-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:var(--r);margin-bottom:8px;cursor:pointer;}
+.hotel-section-hd:hover{background:var(--surface3);}
+.hsh-name{font-weight:600;font-size:13px;}
+.hsh-stats{display:flex;gap:12px;margin-left:auto;font-size:12px;color:var(--text2);}
+
+/* PRINT STYLES */
+@media print{
+  .sidebar,.topbar,.btn,.row-actions,.modal-overlay,.toast,
+  .toolbar,.view-toggle,select,input,.vt-btn,
+  #topbar-action-btn,.topbar-right,.alert-pill{display:none!important;}
+  .main{margin-left:0!important;}
+  body{background:#fff;font-size:11px;}
+  .print-header{display:block!important;}
+  .stock-item-card{break-inside:avoid;border:1px solid #ccc!important;}
+  .stock-item-card::before{display:none;}
+  .card{box-shadow:none!important;border:1px solid #ccc!important;}
+  .value-strip{grid-template-columns:repeat(5,1fr);}
+  .vs-card{border:1px solid #ccc!important;}
+  .content{padding:0!important;}
+  .stock-card-grid{grid-template-columns:repeat(3,1fr)!important;}
+  @page{margin:1.5cm;size:A4;}
+}
+.print-header{display:none;padding:0 0 16px;border-bottom:2px solid var(--border);margin-bottom:16px;}
+.print-header h1{font-family:'DM Serif Display',serif;font-size:20px;}
+.print-header p{font-size:12px;color:#666;margin-top:4px;}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;background:var(--surface2);border-radius:var(--r);padding:3px;gap:2px;}
+.vt-btn{padding:5px 14px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.vt-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+
+/* CATEGORY SECTION */
+.cat-section{margin-bottom:22px;}
+.cat-section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.cat-count{font-size:10px;background:var(--surface2);color:var(--text3);padding:2px 7px;border-radius:10px;font-weight:500;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">🏨</div>
+      <div class="login-brand">HotelStock Pro</div>
+      <div class="login-sub">Multi-Property Inventory System</div>
+    </div>
+    <div class="login-form">
+      <div class="fg" style="margin-bottom:12px;">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="fg" style="margin-bottom:20px;">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;" onclick="doLogin()">Sign In</button>
+      <div id="login-error" style="color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none;"></div>
+      <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--text3);">Forgot your password? Contact your administrator.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     APP SCREEN
+════════════════════════════════════════ -->
+<div class="screen" id="screen-app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-name">HotelStock Pro</div>
+      <div class="sb-brand-sub">Inventory Management</div>
+    </div>
+    <div class="sb-hotel-selector" id="sb-hotel-wrap" style="display:none;">
+      <div class="sb-hotel-label">Active Property</div>
+      <select class="sb-hotel-select" id="sb-hotel-select" onchange="switchHotel(this.value)"></select>
+    </div>
+    <div class="sb-nav" id="sidebar-nav"></div>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar" id="sb-avatar"></div>
+        <div>
+          <div class="sb-user-name" id="sb-username">—</div>
+          <div class="sb-user-role" id="sb-userrole">—</div>
+        </div>
+      </div>
+      <button class="sb-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-hotel-tag" id="topbar-hotel-tag" style="display:none;"></div>
+      </div>
+      <div class="topbar-right">
+        <span class="alert-pill" id="topbar-alert-pill" style="display:none;" onclick="nav('alerts')"></span>
+        <button class="btn btn-primary btn-sm" id="topbar-action-btn" style="display:none;"></button>
+      </div>
+    </div>
+    <div class="content" id="main-content"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODALS
+════════════════════════════════════════ -->
+
+<!-- HOTEL MODAL -->
+<div class="modal-overlay" id="m-hotel">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="m-hotel-title">Add Hotel</div><button class="modal-close" onclick="closeM('m-hotel')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg full"><label>Hotel / Property Name *</label><input type="text" id="h-name" placeholder="e.g. Grand Palace Hotel"></div>
+        <div class="fg"><label>City</label><input type="text" id="h-city" placeholder="Dubai"></div>
+        <div class="fg"><label>Country</label><input type="text" id="h-country" placeholder="UAE"></div>
+        <div class="fg"><label>Star Rating</label><select id="h-stars"><option>5-Star</option><option>4-Star</option><option>3-Star</option><option>Boutique</option><option>Budget</option></select></div>
+        <div class="fg"><label>Total Rooms</label><input type="number" id="h-rooms" placeholder="120"></div>
+        <div class="fg"><label>Currency</label><select id="h-currency"><option value="$">USD ($)</option><option value="€">EUR (€)</option><option value="£">GBP (£)</option><option value="₹">INR (₹)</option><option value="AED">AED</option><option value="SAR">SAR</option></select></div>
+        <div class="fg"><label>Phone</label><input type="tel" id="h-phone" placeholder="+971 4 000 0000"></div>
+        <div class="fg full"><label>Address</label><input type="text" id="h-address" placeholder="Full address"></div>
+        <div class="fg full"><label>Notes</label><textarea id="h-notes" style="min-height:55px;" placeholder="Any notes..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-hotel')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHotel()">Save Hotel</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-overlay" id="m-user">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="m-user-title">Create Account</div><button class="modal-close" onclick="closeM('m-user')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label>Full Name *</label><input type="text" id="u-name" placeholder="Sarah Johnson"></div>
+        <div class="fg"><label>Email *</label><input type="email" id="u-email" placeholder="sarah@hotel.com"></div>
+        <div class="fg"><label>Role *</label><select id="u-role" onchange="updateUserFormRole()">
+          <option value="gm">General Manager (GM)</option>
+          <option value="manager">Inventory Manager</option>
+          <option value="admin" id="u-role-admin-opt" style="display:none;">Super Admin</option>
+        </select></div>
+        <div class="fg" id="u-hotel-wrap"><label>Assign to Hotel *</label><select id="u-hotel"></select></div>
+        <div class="fg"><label>Password *</label><input type="password" id="u-pass" placeholder="Min 6 characters" oninput="checkPwStrength()">
+          <div class="pw-strength" id="pw-str"></div></div>
+        <div class="fg"><label>Confirm Password *</label><input type="password" id="u-pass2" placeholder="Repeat password"></div>
+        <div class="fg full"><label>Phone</label><input type="text" id="u-phone" placeholder="+1 555 000 0000"></div>
+      </div>
+      <div id="u-role-perms" style="margin-top:14px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-user')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM MODAL -->
+<div class="modal-overlay" id="m-item">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="m-item-title">Add Item</div><button class="modal-close" onclick="closeM('m-item')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg full"><label>Item Name *</label><input type="text" id="i-name" placeholder="e.g. Bath Towels (White, Large)"></div>
+        <div class="fg"><label>Category *</label><select id="i-cat">
+          <option>Linens & Towels</option><option>Toiletries</option><option>Food & Beverage</option>
+          <option>Cleaning Supplies</option><option>Kitchen Supplies</option><option>Guest Amenities</option>
+          <option>Maintenance</option><option>Office Supplies</option>
+        </select></div>
+        <div class="fg"><label>Unit</label><select id="i-unit">
+          <option value="pieces">pieces</option><option value="kg">kg</option><option value="liters">liters</option>
+          <option value="boxes">boxes</option><option value="packs">packs</option><option value="rolls">rolls</option>
+          <option value="bottles">bottles</option><option value="sets">sets</option><option value="pairs">pairs</option>
+        </select></div>
+        <div class="fg"><label>Current Stock *</label><input type="number" id="i-current" placeholder="0" min="0"></div>
+        <div class="fg"><label>Minimum Level *</label><input type="number" id="i-min" placeholder="Trigger reorder below this"></div>
+        <div class="fg"><label>Maximum Level</label><input type="number" id="i-max" placeholder="Max storage capacity"></div>
+        <div class="fg"><label>Unit Cost</label><input type="number" id="i-cost" placeholder="0.00" step="0.01"></div>
+        <div class="fg"><label>Preferred Vendor</label><select id="i-vendor"><option value="">-- None --</option></select></div>
+        <div class="fg"><label>Storage Location</label><input type="text" id="i-location" placeholder="Storeroom B, Shelf 3"></div>
+        <div class="fg full" style="background:var(--blue-l);border-radius:var(--r);padding:10px 12px;border:1px solid #b0c8f0;">
+          <label style="color:var(--blue);">PAR Level Settings — Occupancy-Based Ordering</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <div class="fg">
+              <label>PAR Type</label>
+              <select id="i-par-type">
+                <option value="none">Not occupancy-linked</option>
+                <option value="daily">Per occupied room per night (daily)</option>
+                <option value="stay">Per occupied room per stay (once)</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>PAR Quantity</label>
+              <input type="number" id="i-par-qty" placeholder="e.g. 2" step="0.1" min="0">
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--blue);margin-top:5px;">Example: Bath Towels = daily, qty 2 means 2 towels per occupied room per night. Shampoo = stay, qty 1 means 1 bottle per guest stay.</div>
+        </div>
+        <div class="fg full" style="background:var(--purple-l);border-radius:var(--r);padding:10px 12px;border:1px solid #d4b8f0;">
+          <label style="color:var(--purple);">Chart of Account (COA) — Accounting Code</label>
+          <select id="i-coa" style="margin-top:4px;border-color:#d4b8f0;"></select>
+          <div style="font-size:11px;color:var(--purple);margin-top:4px;">This code links this item to your accounting system. Your accounting team manages the COA list.</div>
+        </div>
+        <div class="fg full"><label>Notes</label><textarea id="i-notes" style="min-height:55px;" placeholder="Any notes..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-item')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="m-order">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title">New Purchase Order</div><button class="modal-close" onclick="closeM('m-order')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="fg"><label>Vendor *</label><select id="o-vendor"><option value="">-- Select Vendor --</option></select></div>
+        <div class="fg"><label>Expected Delivery</label><input type="date" id="o-delivery"></div>
+        <div class="fg"><label>Ordered By *</label><input type="text" id="o-by" placeholder="Your name"></div>
+        <div class="fg"><label>Priority</label><select id="o-priority"><option value="normal">Normal</option><option value="urgent">Urgent</option></select></div>
+        <div class="fg full"><label>Notes / Instructions</label><input type="text" id="o-notes" placeholder="e.g. Deliver to loading bay, call reception on arrival"></div>
+      </div>
+      <hr class="div">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Order Items</div>
+      <div id="o-items-list" style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="fg" style="flex:2;"><label>Item</label><select id="o-item-sel"><option value="">-- Select --</option></select></div>
+        <div class="fg" style="flex:1;"><label>Qty</label><input type="number" id="o-item-qty" placeholder="0" min="1"></div>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="addOItem()">+ Add</button>
+      </div>
+      <div style="margin-top:12px;padding:9px 12px;background:var(--surface2);border-radius:var(--r);font-size:13px;font-weight:600;">
+        Estimated Total: <span id="o-total">$0.00</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-order')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOrder()">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- VENDOR MODAL -->
+<div class="modal-overlay" id="m-vendor">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="m-vendor-title">Add Vendor</div><button class="modal-close" onclick="closeM('m-vendor')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg full"><label>Company / Vendor Name *</label><input type="text" id="v-name" placeholder="Premier Linen Co."></div>
+        <div class="fg"><label>Category</label><select id="v-cat">
+          <option>Linens & Towels</option><option>Toiletries</option><option>Food & Beverage</option>
+          <option>Cleaning Supplies</option><option>Kitchen Supplies</option><option>Guest Amenities</option>
+          <option>Multi-category</option>
+        </select></div>
+        <div class="fg"><label>Contact Person</label><input type="text" id="v-contact" placeholder="Name"></div>
+        <div class="fg"><label>Phone</label><input type="tel" id="v-phone" placeholder="+1 555 0000"></div>
+        <div class="fg"><label>Email</label><input type="email" id="v-email" placeholder="vendor@company.com"></div>
+        <div class="fg"><label>Payment Terms</label><select id="v-terms"><option>Net 30</option><option>Net 15</option><option>Net 60</option><option>COD</option><option>Prepaid</option></select></div>
+        <div class="fg full"><label>Address</label><textarea id="v-address" style="min-height:55px;" placeholder="Full address..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-vendor')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVendor()">Save Vendor</button>
+    </div>
+  </div>
+</div>
+
+<!-- COA MODAL -->
+<div class="modal-overlay" id="m-coa">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title" id="m-coa-title">Add COA Entry</div><button class="modal-close" onclick="closeM('m-coa')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--purple-l);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--purple);margin-bottom:14px;">
+        Only accounting team / admin should add or edit COA entries. Managers can only select from the list when adding items.
+      </div>
+      <div class="form-grid">
+        <div class="fg"><label>Account Code *</label><input type="text" id="coa-code" placeholder="e.g. 5001"></div>
+        <div class="fg"><label>Account Type *</label><select id="coa-type"><option value="Expense">Expense</option><option value="Asset">Asset</option><option value="Liability">Liability</option><option value="Revenue">Revenue</option></select></div>
+        <div class="fg full"><label>Account Name *</label><input type="text" id="coa-name" placeholder="e.g. Linen & Laundry Expenses"></div>
+        <div class="fg"><label>Cost Centre</label><input type="text" id="coa-cc" placeholder="e.g. Housekeeping, F&B, Admin"></div>
+        <div class="fg"><label>GL Code</label><input type="text" id="coa-gl" placeholder="e.g. 5001-HK"></div>
+        <div class="fg full"><label>Description</label><input type="text" id="coa-desc" placeholder="What this account covers..."></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-coa')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCoa()">Save COA Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="m-order-detail">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="m-od-title">Order Detail</div><button class="modal-close" onclick="closeM('m-order-detail')">✕</button></div>
+    <div class="modal-body" id="m-od-body"></div>
+    <div class="modal-footer" id="m-od-footer"></div>
+  </div>
+</div>
+
+<!-- ADJUST STOCK MODAL -->
+<div class="modal-overlay" id="m-adjust">
+  <div class="modal" style="width:380px;">
+    <div class="modal-header"><div class="modal-title">Adjust Stock</div><button class="modal-close" onclick="closeM('m-adjust')">✕</button></div>
+    <div class="modal-body">
+      <div id="m-adjust-info" style="margin-bottom:12px;"></div>
+      <div class="form-grid" style="grid-template-columns:1fr;">
+        <div class="fg"><label>Adjustment Type</label><select id="adj-type">
+          <option value="set">Set exact quantity</option>
+          <option value="add">Add to current stock</option>
+          <option value="subtract">Subtract from current stock</option>
+        </select></div>
+        <div class="fg"><label>Quantity</label><input type="number" id="adj-qty" placeholder="0" min="0"></div>
+        <div class="fg"><label>Reason</label><input type="text" id="adj-reason" placeholder="e.g. Received delivery, Used, Damaged..."></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeM('m-adjust')">Cancel</button>
+      <button class="btn btn-primary" onclick="doAdjust()">Apply Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  DATA STORE
+// ══════════════════════════════════════════════════════════
+const DB = {
+  hotels: [
+    {id:1,name:'Grand Palace Hotel',city:'New York',country:'USA',stars:'5-Star',rooms:250,currency:'$',phone:'+1 212 000 0001',address:'100 Fifth Ave, New York, NY',notes:'Flagship property',active:true},
+    {id:2,name:'Sea View Resort',city:'Miami',country:'USA',stars:'4-Star',rooms:180,currency:'$',phone:'+1 305 000 0002',address:'200 Ocean Drive, Miami, FL',notes:'Beach resort',active:true},
+    {id:3,name:'Mountain Lodge',city:'Aspen',country:'USA',stars:'Boutique',rooms:45,currency:'$',phone:'+1 970 000 0003',address:'50 Mountain Rd, Aspen, CO',notes:'Winter seasonal',active:true},
+  ],
+  users: [
+    {id:1,name:'Super Admin',email:'admin@hotelstock.com',password:'Hs@Adm!n#2025',role:'admin',hotelId:null,phone:'+1 000 0000',active:true,created:'2025-01-01'},
+    {id:2,name:'Sarah Johnson',email:'gm.grandpalace@hotel.com',password:'GpH@Gm#2025!',role:'gm',hotelId:1,phone:'+1 212 111 1111',active:true,created:'2025-01-15'},
+    {id:3,name:'Carlos Rivera',email:'gm.seaview@hotel.com',password:'SvH@Gm#2025!',role:'gm',hotelId:2,phone:'+1 305 222 2222',active:true,created:'2025-01-15'},
+    {id:4,name:'Emma Watson',email:'inv.grandpalace@hotel.com',password:'GpH@Inv#2025!',role:'manager',hotelId:1,phone:'+1 212 333 3333',active:true,created:'2025-02-01'},
+    {id:5,name:'James Kim',email:'inv.seaview@hotel.com',password:'SvH@Inv#2025!',role:'manager',hotelId:2,phone:'+1 305 444 4444',active:true,created:'2025-02-01'},
+  ],
+  coa: [
+    {id:1,code:'5001',name:'Linen & Laundry Expenses',type:'Expense',costCentre:'Housekeeping',gl:'5001-HK',description:'Towels, sheets, pillowcases, laundry'},
+    {id:2,code:'5002',name:'Guest Amenities',type:'Expense',costCentre:'Front Office',gl:'5002-FO',description:'Toiletries, slippers, welcome kits'},
+    {id:3,code:'5003',name:'Food & Beverage Cost',type:'Expense',costCentre:'F&B',gl:'5003-FB',description:'Coffee, water, minibar, pantry items'},
+    {id:4,code:'5004',name:'Cleaning & Housekeeping Supplies',type:'Expense',costCentre:'Housekeeping',gl:'5004-HK',description:'Floor cleaner, detergents, mops'},
+    {id:5,code:'5005',name:'Kitchen Supplies',type:'Expense',costCentre:'F&B',gl:'5005-FB',description:'Kitchen consumables and equipment'},
+    {id:6,code:'5006',name:'Maintenance & Repairs',type:'Expense',costCentre:'Engineering',gl:'5006-ENG',description:'Maintenance supplies and spare parts'},
+    {id:7,code:'5007',name:'Office & Admin Supplies',type:'Expense',costCentre:'Admin',gl:'5007-ADM',description:'Stationery, printing, office consumables'},
+    {id:8,code:'1301',name:'Inventory Asset — Linen',type:'Asset',costCentre:'Housekeeping',gl:'1301-HK',description:'Linen stock on hand'},
+    {id:9,code:'1302',name:'Inventory Asset — F&B',type:'Asset',costCentre:'F&B',gl:'1302-FB',description:'F&B stock on hand'},
+    {id:10,code:'1303',name:'Inventory Asset — General',type:'Asset',costCentre:'General',gl:'1303-GEN',description:'General inventory stock on hand'},
+  ],
+  inventory: [
+    {id:1,hotelId:1,name:'Bath Towels (White)',category:'Linens & Towels',current:18,min:50,max:200,unit:'pieces',cost:8.50,vendorId:1,location:'Laundry Room A',notes:'',coaId:1,parType:'daily',parQty:2,updated:'2025-03-15'},
+    {id:2,hotelId:1,name:'Bed Sheets (King)',category:'Linens & Towels',current:12,min:30,max:120,unit:'pieces',cost:22.00,vendorId:1,location:'Linen Closet B2',notes:'',coaId:1,parType:'stay',parQty:1,updated:'2025-03-14'},
+    {id:3,hotelId:1,name:'Shampoo (Mini 30ml)',category:'Toiletries',current:480,min:300,max:1200,unit:'bottles',cost:0.85,vendorId:2,location:'Amenities Store',notes:'Brand: LuxeGlow',coaId:2,parType:'stay',parQty:2,updated:'2025-03-16'},
+    {id:4,hotelId:1,name:'Body Wash (Mini)',category:'Toiletries',current:95,min:300,max:1200,unit:'bottles',cost:0.90,vendorId:2,location:'Amenities Store',notes:'',coaId:2,parType:'stay',parQty:1,updated:'2025-03-16'},
+    {id:5,hotelId:1,name:'Coffee Pods (Box/50)',category:'Food & Beverage',current:8,min:20,max:80,unit:'boxes',cost:14.00,vendorId:3,location:'Kitchen Pantry',notes:'Nespresso compatible',coaId:3,parType:'daily',parQty:0.1,updated:'2025-03-10'},
+    {id:6,hotelId:1,name:'Floor Cleaner (5L)',category:'Cleaning Supplies',current:22,min:15,max:60,unit:'bottles',cost:12.00,vendorId:4,location:'Cleaning Store',notes:'',coaId:4,parType:'none',parQty:0,updated:'2025-03-13'},
+    {id:7,hotelId:1,name:'Toilet Paper (48-roll box)',category:'Cleaning Supplies',current:6,min:20,max:80,unit:'boxes',cost:18.00,vendorId:4,location:'Storeroom C',notes:'3-ply',coaId:4,parType:'daily',parQty:0.5,updated:'2025-03-17'},
+    {id:8,hotelId:1,name:'Disposable Slippers',category:'Guest Amenities',current:220,min:200,max:800,unit:'pairs',cost:0.60,vendorId:2,location:'Amenities Store',notes:'',coaId:2,parType:'stay',parQty:1,updated:'2025-03-11'},
+    {id:9,hotelId:2,name:'Pool Towels',category:'Linens & Towels',current:45,min:100,max:400,unit:'pieces',cost:12.00,vendorId:1,location:'Pool Deck Store',notes:'',coaId:1,parType:'daily',parQty:2,updated:'2025-03-15'},
+    {id:10,hotelId:2,name:'Sunscreen (50ml)',category:'Guest Amenities',current:30,min:50,max:200,unit:'bottles',cost:3.50,vendorId:2,location:'Pool Amenities',notes:'SPF 50',coaId:2,parType:'stay',parQty:1,updated:'2025-03-14'},
+    {id:11,hotelId:2,name:'Bottled Water (500ml)',category:'Food & Beverage',current:120,min:100,max:500,unit:'pieces',cost:0.40,vendorId:3,location:'Kitchen',notes:'',coaId:3,parType:'daily',parQty:2,updated:'2025-03-16'},
+    {id:12,hotelId:3,name:'Fireplace Logs',category:'Maintenance',current:8,min:20,max:100,unit:'packs',cost:25.00,vendorId:4,location:'Maintenance Store',notes:'',coaId:6,parType:'none',parQty:0,updated:'2025-03-12'},
+  ],
+  vendors: [
+    {id:1,hotelId:null,name:'Premier Linen Co.',category:'Linens & Towels',contact:'Mark Davis',phone:'+1 555 0101',email:'mark@premierlinens.com',terms:'Net 30',address:'123 Industrial Blvd, Chicago, IL'},
+    {id:2,hotelId:null,name:'HospitalityHub Supplies',category:'Guest Amenities',contact:'Lisa Chen',phone:'+1 555 0202',email:'lisa@hospihub.com',terms:'Net 15',address:'456 Commerce Dr, New York, NY'},
+    {id:3,hotelId:null,name:'Fresh Provisions Ltd.',category:'Food & Beverage',contact:'Tom Baker',phone:'+1 555 0303',email:'tom@freshprov.com',terms:'COD',address:'789 Market St, Dallas, TX'},
+    {id:4,hotelId:null,name:'CleanPro Distributors',category:'Cleaning Supplies',contact:'Anna Rivera',phone:'+1 555 0404',email:'anna@cleanpro.com',terms:'Net 30',address:'321 Supply Ave, Atlanta, GA'},
+  ],
+  orders: [
+    {id:'PO-001',hotelId:1,date:'2025-03-10',vendorId:1,items:[{itemId:1,qty:100},{itemId:2,qty:60}],total:3520,orderedBy:'Sarah Johnson',delivery:'2025-03-17',status:'delivered',notes:'Urgent restock',priority:'urgent'},
+    {id:'PO-002',hotelId:1,date:'2025-03-12',vendorId:4,items:[{itemId:6,qty:20},{itemId:7,qty:30}],total:780,orderedBy:'Emma Watson',delivery:'2025-03-19',status:'pending',notes:'',priority:'normal'},
+    {id:'PO-003',hotelId:2,date:'2025-03-14',vendorId:2,items:[{itemId:10,qty:100}],total:350,orderedBy:'Carlos Rivera',delivery:'2025-03-20',status:'pending',notes:'Pool season prep',priority:'normal'},
+    {id:'PO-004',hotelId:2,date:'2025-03-01',vendorId:3,items:[{itemId:11,qty:200}],total:80,orderedBy:'James Kim',delivery:'2025-03-08',status:'delivered',notes:'',priority:'normal'},
+  ],
+  activities: [
+    {hotelId:1,text:'Order PO-002 placed with CleanPro',time:'5 days ago',color:'#1a4fa0'},
+    {hotelId:1,text:'Bath Towels stock critically low: 18 remaining',time:'3 days ago',color:'#b83232'},
+    {hotelId:2,text:'Order PO-003 placed — Pool season prep',time:'4 days ago',color:'#1a4fa0'},
+    {hotelId:1,text:'Order PO-001 delivered — stock updated',time:'1 week ago',color:'#1a7a45'},
+    {hotelId:2,text:'Order PO-004 delivered',time:'2 weeks ago',color:'#1a7a45'},
+  ]
+};
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let currentUser = null;
+let currentHotelId = null;
+let currentView = 'dashboard';
+let editingItemId = null;
+let editingVendorId = null;
+let editingUserId = null;
+let editingHotelId = null;
+let adjustingItemId = null;
+let orderItemsTemp = [];
+// PAR state
+let parMode = 'average'; // 'average' or 'daily'
+let parBuffer = 10; // % safety buffer
+let parOccupancyAvg = 80; // % for average mode
+let parDays = 14;
+let parDailyOcc = {}; // {dateStr: rooms}
+let parResults = []; // calculated results
+let nextIds = {hotel:4,user:6,inventory:13,vendor:5,order:5,coa:11};
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+function doLogin(){
+  const email=document.getElementById('login-email').value.trim().toLowerCase();
+  const pass=document.getElementById('login-password').value;
+  const user=DB.users.find(u=>u.email.toLowerCase()===email && u.password===pass && u.active);
+  const errEl=document.getElementById('login-error');
+  if(!user){errEl.textContent='Invalid email or password.';errEl.style.display='block';return;}
+  errEl.style.display='none';
+  currentUser=user;
+  currentHotelId=user.hotelId;
+  if(!currentHotelId && user.role==='admin'){
+    currentHotelId=DB.hotels[0]?.id||null;
+  }
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+  setupSidebar();
+  nav('dashboard');
+  // Auto-load from Google Sheets on login
+  setTimeout(()=>gsStartup(), 500);
+}
+
+function doLogout(){
+  currentUser=null;currentHotelId=null;
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('login-password').value='';
+}
+
+// ══════════════════════════════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════════════════════════════
+function setupSidebar(){
+  const u=currentUser;
+  // Avatar
+  const av=document.getElementById('sb-avatar');
+  const initials=u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const colors={admin:['#d4a843','#1c1a16'],gm:['#5a3ab8','#fff'],manager:['#1a4fa0','#fff']};
+  const [bg,fc]=colors[u.role]||['#888','#fff'];
+  av.style.background=bg;av.style.color=fc;av.textContent=initials;
+  document.getElementById('sb-username').textContent=u.name;
+  document.getElementById('sb-userrole').textContent=u.role==='admin'?'Super Admin':u.role==='gm'?'General Manager':'Inventory Manager';
+
+  // Hotel selector (admin only)
+  const hotelWrap=document.getElementById('sb-hotel-wrap');
+  if(u.role==='admin'){
+    hotelWrap.style.display='block';
+    const sel=document.getElementById('sb-hotel-select');
+    sel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+    sel.value=currentHotelId;
+  } else {
+    hotelWrap.style.display='none';
+  }
+
+  // Nav items
+  const isAdmin=u.role==='admin';
+  const isGM=u.role==='gm';
+  const isManager=u.role==='manager';
+  let nav='';
+  nav+=`<div class="sb-section">Main</div>`;
+  nav+=sbItem('dashboard','📊','Dashboard');
+  if(isAdmin){
+    nav+=sbItem('hotels','🏨','All Properties');
+  }
+  nav+=sbItem('inventory','📦','Inventory');
+  nav+=sbItem('stockoverview','🗂️','Stock Overview');
+  if(isAdmin) nav+=sbItem('allstock','🌐','All Hotels Stock');
+  nav+=sbItem('orders','🛒','Purchase Orders');
+  nav+=`<div class="sb-section">Management</div>`;
+  nav+=sbItem('vendors','🏢','Vendors');
+  nav+=sbItem('coa','📒','Chart of Accounts');
+  nav+=sbItem('par','🛏️','PAR & Occupancy');
+  nav+=sbItem('alerts','🔔','Stock Alerts','sb-alert-badge');
+  nav+=sbItem('reports','📈','Reports');
+  nav+=sbItem('accounting','🧾','Accounting Report');
+  if(isAdmin||isGM){
+    nav+=`<div class="sb-section">Administration</div>`;
+    nav+=sbItem('users','👥','User Accounts');
+    if(isAdmin) nav+=sbItem('settings','⚙️','System Settings');
+  }
+  document.getElementById('sidebar-nav').innerHTML=nav;
+  updateAlertBadge();
+}
+
+function sbItem(id,icon,label,badgeId){
+  return `<div class="sb-item" id="nav-${id}" onclick="nav('${id}')"><span class="sb-item-icon">${icon}</span>${label}${badgeId?`<span class="sb-item-badge" id="${badgeId}" style="display:none;">0</span>`:''}</div>`;
+}
+
+function switchHotel(id){
+  currentHotelId=parseInt(id);
+  nav(currentView);
+  updateAlertBadge();
+}
+
+function updateAlertBadge(){
+  const alerts=getAlertItems();
+  const badge=document.getElementById('sb-alert-badge');
+  const pill=document.getElementById('topbar-alert-pill');
+  if(badge){badge.textContent=alerts.length;badge.style.display=alerts.length?'inline':'none';}
+  if(pill){
+    if(alerts.length){pill.textContent=`⚠️ ${alerts.length} Alert${alerts.length>1?'s':''}`;pill.style.display='inline';}
+    else{pill.style.display='none';}
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+function nav(viewId){
+  currentView=viewId;
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  const navEl=document.getElementById('nav-'+viewId);
+  if(navEl) navEl.classList.add('active');
+  const titles={dashboard:'Dashboard',hotels:'All Properties',inventory:'Inventory',stockoverview:'Stock Overview',allstock:'All Hotels — Stock',orders:'Purchase Orders',vendors:'Vendors',coa:'Chart of Accounts',par:'PAR & Occupancy Planner',alerts:'Stock Alerts',reports:'Reports & Analytics',accounting:'Accounting Report',users:'User Accounts',settings:'System Settings'};
+  document.getElementById('page-title').textContent=titles[viewId]||viewId;
+
+  const hotel=DB.hotels.find(h=>h.id===currentHotelId);
+  const htag=document.getElementById('topbar-hotel-tag');
+  if(hotel && !['hotels','users','settings','allstock','coa','accounting'].includes(viewId)){
+    htag.textContent=hotel.name;htag.style.display='inline';
+  } else {htag.style.display='none';}
+
+  // Topbar action button
+  const abtn=document.getElementById('topbar-action-btn');
+  const actionMap={
+    inventory:{label:'+ Add Item',fn:()=>openItemModal()},
+    orders:{label:'+ New Order',fn:()=>openOrderModal()},
+    vendors:{label:'+ Add Vendor',fn:()=>openVendorModal()},
+    hotels:{label:'+ Add Hotel',fn:()=>openHotelModal()},
+    users:{label:'+ Create Account',fn:()=>openUserModal()},
+    coa:{label:'+ Add COA Entry',fn:()=>openCoaModal()},
+    par:{label:'🖨 Print PAR Report',fn:()=>printStockReport()},
+    stockoverview:{label:'🖨 Print Report',fn:()=>printStockReport()},
+    allstock:{label:'🖨 Print All Stock',fn:()=>printStockReport()},
+    accounting:{label:'🖨 Print Accounting Report',fn:()=>printStockReport()},
+  };
+  if(actionMap[viewId]){
+    abtn.textContent=actionMap[viewId].label;
+    abtn.onclick=actionMap[viewId].fn;
+    abtn.style.display='inline-flex';
+  } else {abtn.style.display='none';}
+
+  const content=document.getElementById('main-content');
+  content.innerHTML='';
+  const renders={dashboard:renderDashboard,hotels:renderHotels,inventory:renderInventory,stockoverview:renderStockOverview,allstock:renderAllStock,orders:renderOrders,vendors:renderVendors,coa:renderCoa,par:renderPAR,alerts:renderAlerts,reports:renderReports,accounting:renderAccounting,users:renderUsers,settings:renderSettings};
+  if(renders[viewId]) renders[viewId]();
+  updateAlertBadge();
+}
+
+// ══════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════
+function hotelInventory(){return DB.inventory.filter(i=>i.hotelId===currentHotelId);}
+function hotelOrders(){return DB.orders.filter(o=>o.hotelId===currentHotelId);}
+function hotelVendors(){return DB.vendors;}
+function hotelActivities(){return DB.activities.filter(a=>a.hotelId===currentHotelId);}
+function getAlertItems(){return hotelInventory().filter(i=>stockStatus(i)!=='ok');}
+function stockStatus(item){
+  const r=item.current/item.min;
+  if(r<=0.5) return 'critical';
+  if(r<=1.1) return 'low';
+  return 'ok';
+}
+function vname(id){const v=DB.vendors.find(x=>x.id===id);return v?v.name:'—';}
+function iname(id){const i=DB.inventory.find(x=>x.id===id);return i?i.name:'—';}
+function hname(id){const h=DB.hotels.find(x=>x.id===id);return h?h.name:'—';}
+function uname(id){const u=DB.users.find(x=>x.id===id);return u?u.name:'—';}
+function getCurrency(){const h=DB.hotels.find(x=>x.id===currentHotelId);return h?h.currency:'$';}
+function fmt(n){return getCurrency()+Number(n).toFixed(2);}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function nid(type){return nextIds[type]++;}
+function canEdit(){return currentUser.role==='admin'||currentUser.role==='gm'||currentUser.role==='manager';}
+function getCoa(id){return DB.coa.find(x=>x.id===id)||null;}
+function coaLabel(id){const c=getCoa(id);return c?`${c.code} — ${c.name}`:'—';}
+function coaBadge(id){const c=getCoa(id);if(!c)return '—';return `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--purple-l);color:var(--purple);font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;font-family:monospace;">${c.code}</span> <span style="font-size:11px;color:var(--text2)">${c.name}</span>`;}
+function coaSelect(selectedId){return '<option value="">-- Select COA --</option>'+DB.coa.map(c=>`<option value="${c.id}" ${c.id===selectedId?'selected':''}>${c.code} — ${c.name} (${c.costCentre})</option>`).join('');}
+
+// ══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════════
+function renderDashboard(){
+  const inv=hotelInventory();
+  const ords=hotelOrders();
+  const alerts=inv.filter(i=>stockStatus(i)!=='ok');
+  const critical=inv.filter(i=>stockStatus(i)==='critical');
+  const openOrd=ords.filter(o=>o.status==='pending');
+  const totalVal=inv.reduce((s,i)=>s+i.current*i.cost,0);
+
+  let html=``;
+  if(critical.length){
+    html+=`<div class="alert-banner">⚠️ <span><strong>Action Required:</strong> ${critical.length} item${critical.length>1?'s are':' is'} critically low and need immediate ordering.</span><button class="btn btn-sm btn-danger" style="margin-left:auto;" onclick="nav('alerts')">View Alerts</button></div>`;
+  }
+
+  html+=`<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Total Items</div><div class="stat-value">${inv.length}</div><div class="stat-sub">tracked in inventory</div></div>
+    <div class="stat-card stat-red"><div class="stat-icon">🚨</div><div class="stat-label">Critical Stock</div><div class="stat-value">${critical.length}</div><div class="stat-sub">need immediate order</div></div>
+    <div class="stat-card stat-orange"><div class="stat-icon">⚠️</div><div class="stat-label">Low Stock</div><div class="stat-value">${alerts.length-critical.length}</div><div class="stat-sub">order within 3 days</div></div>
+    <div class="stat-card stat-gold"><div class="stat-icon">🛒</div><div class="stat-label">Open Orders</div><div class="stat-value">${openOrd.length}</div><div class="stat-sub">pending delivery</div></div>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Critical & Low Stock</span><button class="btn btn-secondary btn-sm" onclick="nav('inventory')">View All</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Item</th><th>Stock Level</th><th>Status</th><th></th></tr></thead><tbody>`;
+
+  const alertItems=inv.filter(i=>stockStatus(i)!=='ok').sort((a,b)=>(a.current/a.min)-(b.current/b.min)).slice(0,6);
+  if(alertItems.length){
+    alertItems.forEach(item=>{
+      const st=stockStatus(item);
+      const pct=Math.min(100,Math.round(item.current/item.max*100));
+      html+=`<tr><td><strong>${item.name}</strong></td><td><div class="stock-bar-wrap"><div class="stock-bar"><div class="stock-fill fill-${st}" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--text2)">${item.current}/${item.max}</span></div></td><td><span class="badge badge-${st}">${st.toUpperCase()}</span></td><td><button class="btn btn-xs btn-primary" onclick="openOrderModal(${item.id})">Order</button></td></tr>`;
+    });
+  } else {
+    html+=`<tr><td colspan="4" class="empty-state" style="padding:20px;">✅ All items at good stock levels</td></tr>`;
+  }
+
+  html+=`</tbody></table></div></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent Orders</span><button class="btn btn-secondary btn-sm" onclick="nav('orders')">View All</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Order #</th><th>Vendor</th><th>Amount</th><th>Status</th></tr></thead><tbody>`;
+
+  const recOrd=[...ords].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  recOrd.forEach(o=>{
+    html+=`<tr><td><strong style="cursor:pointer;color:var(--blue)" onclick="viewOrderDetail('${o.id}')">${o.id}</strong></td><td>${vname(o.vendorId)}</td><td><strong>${fmt(o.total)}</strong></td><td><span class="badge badge-${o.status}">${o.status}</span></td></tr>`;
+  });
+  if(!recOrd.length) html+=`<tr><td colspan="4" class="empty-state">No orders yet</td></tr>`;
+
+  html+=`</tbody></table></div></div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-header"><span class="card-title">Stock Health by Category</span></div>
+        <div class="card-body" id="cat-health-body">`;
+
+  const cats={};
+  inv.forEach(i=>{
+    cats[i.category]=cats[i.category]||{ok:0,low:0,critical:0};
+    cats[i.category][stockStatus(i)]++;
+  });
+  Object.entries(cats).forEach(([cat,c])=>{
+    const total=c.ok+c.low+c.critical;
+    html+=`<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px;">
+        <span>${cat}</span><span style="color:var(--text3)">${total} items</span>
+      </div>
+      <div style="height:5px;border-radius:3px;overflow:hidden;display:flex;">
+        <div style="width:${Math.round(c.ok/total*100)}%;background:var(--green)"></div>
+        <div style="width:${Math.round(c.low/total*100)}%;background:var(--orange)"></div>
+        <div style="width:${Math.round(c.critical/total*100)}%;background:var(--red)"></div>
+      </div>
+    </div>`;
+  });
+
+  html+=`</div></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent Activity</span></div>
+        <div class="card-body" style="padding:0 18px;">`;
+
+  const acts=hotelActivities().slice(0,5);
+  acts.forEach(a=>{
+    html+=`<div class="activity-item"><div class="activity-dot" style="background:${a.color}"></div><div><div style="font-size:12px;">${a.text}</div><div class="activity-time">${a.time}</div></div></div>`;
+  });
+  if(!acts.length) html+=`<div class="empty-state" style="padding:20px;">No recent activity</div>`;
+  html+=`</div></div>
+    </div>
+  </div>`;
+
+  document.getElementById('main-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  HOTELS (ADMIN ONLY)
+// ══════════════════════════════════════════════════════════
+function renderHotels(){
+  let html=`<div class="hotels-grid">`;
+  DB.hotels.forEach(h=>{
+    const inv=DB.inventory.filter(i=>i.hotelId===h.id);
+    const alerts=inv.filter(i=>stockStatus(i)!=='ok').length;
+    const openOrds=DB.orders.filter(o=>o.hotelId===h.id&&o.status==='pending').length;
+    const users=DB.users.filter(u=>u.hotelId===h.id);
+    html+=`<div class="hotel-card">
+      <div class="hotel-card-header">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div class="hotel-initial">${h.name[0]}</div>
+          <div><div class="hotel-name">${h.name}</div><div class="hotel-location">📍 ${h.city}, ${h.country}</div></div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-icon" onclick="editHotel(${h.id})" title="Edit">✏️</button>
+          <button class="btn btn-xs btn-primary" onclick="switchAndView(${h.id})">Open</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span class="badge badge-active">${h.stars}</span>
+        <span style="font-size:11px;color:var(--text3);">${h.rooms} rooms · ${h.currency}</span>
+      </div>
+      <div class="hotel-stats">
+        <span>📦 ${inv.length} items</span>
+        ${alerts?`<span style="color:var(--red)">⚠️ ${alerts} alerts</span>`:'<span style="color:var(--green)">✅ Stock OK</span>'}
+        <span>🛒 ${openOrds} open orders</span>
+        <span>👥 ${users.length} staff</span>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+  if(!DB.hotels.length) html=`<div class="empty-state"><div class="empty-icon">🏨</div>No hotels yet. Add your first property.</div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function switchAndView(hid){
+  currentHotelId=hid;
+  const sel=document.getElementById('sb-hotel-select');
+  if(sel) sel.value=hid;
+  nav('dashboard');
+}
+
+function openHotelModal(id){
+  editingHotelId=id||null;
+  const h=id?DB.hotels.find(x=>x.id===id):null;
+  document.getElementById('m-hotel-title').textContent=id?'Edit Hotel':'Add Hotel';
+  document.getElementById('h-name').value=h?h.name:'';
+  document.getElementById('h-city').value=h?h.city:'';
+  document.getElementById('h-country').value=h?h.country:'';
+  document.getElementById('h-stars').value=h?h.stars:'5-Star';
+  document.getElementById('h-rooms').value=h?h.rooms:'';
+  document.getElementById('h-currency').value=h?h.currency:'$';
+  document.getElementById('h-phone').value=h?h.phone:'';
+  document.getElementById('h-address').value=h?h.address:'';
+  document.getElementById('h-notes').value=h?h.notes:'';
+  openM('m-hotel');
+}
+
+function editHotel(id){openHotelModal(id);}
+
+function saveHotel(){
+  const name=document.getElementById('h-name').value.trim();
+  if(!name){showToast('Hotel name is required','error');return;}
+  if(editingHotelId){
+    const h=DB.hotels.find(x=>x.id===editingHotelId);
+    h.name=name;h.city=v('h-city');h.country=v('h-country');h.stars=v('h-stars');
+    h.rooms=parseInt(v('h-rooms'))||0;h.currency=v('h-currency');h.phone=v('h-phone');
+    h.address=v('h-address');h.notes=v('h-notes');
+    showToast('Hotel updated!','success');
+  } else {
+    DB.hotels.push({id:nid('hotel'),name,city:v('h-city'),country:v('h-country'),stars:v('h-stars'),rooms:parseInt(v('h-rooms'))||0,currency:v('h-currency'),phone:v('h-phone'),address:v('h-address'),notes:v('h-notes'),active:true});
+    // refresh hotel selector
+    const sel=document.getElementById('sb-hotel-select');
+    if(sel) sel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+    showToast(`Hotel "${name}" added!`,'success');
+  }
+  closeM('m-hotel');
+  renderHotels();gsAutoSync();
+}
+
+// ══════════════════════════════════════════════════════════
+//  INVENTORY
+// ══════════════════════════════════════════════════════════
+function renderInventory(filter){
+  const searchEl=document.getElementById('inv-search');
+  const catEl=document.getElementById('inv-cat');
+  const stEl=document.getElementById('inv-st');
+  const search=searchEl?searchEl.value.toLowerCase():'';
+  const cat=catEl?catEl.value:'';
+  const st=stEl?stEl.value:'';
+
+  const cats=[...new Set(hotelInventory().map(i=>i.category))];
+  let html=`<div class="toolbar">
+    <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="inv-search" placeholder="Search items..." value="${search}" oninput="renderInventory()"></div>
+    <select class="filter-sel" id="inv-cat" onchange="renderInventory()"><option value="">All Categories</option>${cats.map(c=>`<option value="${c}" ${c===cat?'selected':''}>${c}</option>`).join('')}</select>
+    <select class="filter-sel" id="inv-st" onchange="renderInventory()"><option value="">All Status</option><option value="critical" ${st==='critical'?'selected':''}>Critical</option><option value="low" ${st==='low'?'selected':''}>Low</option><option value="ok" ${st==='ok'?'selected':''}>OK</option></select>
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Category</th><th>COA Code</th><th>Stock Level</th><th>Min</th><th>Max</th><th>Unit</th><th>Cost</th><th>Vendor</th><th>Status</th><th></th></tr></thead>
+    <tbody>`;
+
+  const items=hotelInventory().filter(i=>{
+    const ms=!search||i.name.toLowerCase().includes(search)||i.category.toLowerCase().includes(search);
+    const mc=!cat||i.category===cat;
+    const mst=!st||stockStatus(i)===st;
+    return ms&&mc&&mst;
+  });
+
+  if(items.length){
+    items.forEach(item=>{
+      const st=stockStatus(item);
+      const pct=Math.min(100,Math.round(item.current/item.max*100));
+      const coa=getCoa(item.coaId);
+      html+=`<tr>
+        <td><strong>${item.name}</strong>${item.location?`<div style="font-size:11px;color:var(--text3)">${item.location}</div>`:''}</td>
+        <td><span class="cat-pill">${item.category}</span></td>
+        <td>${coa?`<div style="display:flex;flex-direction:column;gap:2px;"><span style="font-family:monospace;font-size:11px;font-weight:700;background:var(--purple-l);color:var(--purple);padding:2px 6px;border-radius:4px;display:inline-block;">${coa.code}</span><span style="font-size:10px;color:var(--text3)">${coa.name}</span></div>`:'<span style="color:var(--text3);font-size:11px;">Not set</span>'}</td>
+        <td><div class="stock-bar-wrap"><div class="stock-bar"><div class="stock-fill fill-${st}" style="width:${pct}%"></div></div><span style="font-size:11px;min-width:28px">${item.current}</span></div></td>
+        <td>${item.min}</td><td>${item.max}</td><td>${item.unit}</td>
+        <td>${getCurrency()}${item.cost.toFixed(2)}</td>
+        <td style="font-size:11px">${vname(item.vendorId)}</td>
+        <td><span class="badge badge-${st}">${st.toUpperCase()}</span></td>
+        <td><div class="row-actions">
+          <button class="btn-icon" onclick="openAdjust(${item.id})" title="Adjust Stock">📦</button>
+          <button class="btn-icon" onclick="openItemModal(${item.id})" title="Edit">✏️</button>
+          <button class="btn btn-xs btn-primary" onclick="openOrderModal(${item.id})">Order</button>
+        </div></td>
+      </tr>`;
+    });
+  } else {
+    html+=`<tr><td colspan="11" class="empty-state"><div class="empty-icon">📦</div>No items found</td></tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function openItemModal(id){
+  editingItemId=id||null;
+  const item=id?DB.inventory.find(x=>x.id===id):null;
+  document.getElementById('m-item-title').textContent=id?'Edit Item':'Add Item';
+  document.getElementById('i-name').value=item?item.name:'';
+  document.getElementById('i-cat').value=item?item.category:'Linens & Towels';
+  document.getElementById('i-unit').value=item?item.unit:'pieces';
+  document.getElementById('i-current').value=item?item.current:'';
+  document.getElementById('i-min').value=item?item.min:'';
+  document.getElementById('i-max').value=item?item.max:'';
+  document.getElementById('i-cost').value=item?item.cost:'';
+  document.getElementById('i-location').value=item?item.location:'';
+  document.getElementById('i-notes').value=item?item.notes:'';
+  // PAR
+  document.getElementById('i-par-type').value=item?(item.parType||'none'):'none';
+  document.getElementById('i-par-qty').value=item?(item.parQty||''):'';
+  // COA
+  document.getElementById('i-coa').innerHTML=coaSelect(item?item.coaId:null);
+  // vendor
+  const vs=document.getElementById('i-vendor');
+  vs.innerHTML='<option value="">-- None --</option>'+DB.vendors.map(v=>`<option value="${v.id}" ${item&&item.vendorId===v.id?'selected':''}>${v.name}</option>`).join('');
+  openM('m-item');
+}
+
+function saveItem(){
+  const name=v('i-name').trim();
+  const current=parseInt(v('i-current'));
+  const min=parseInt(v('i-min'));
+  if(!name||isNaN(current)||isNaN(min)){showToast('Fill in required fields','error');return;}
+  const max=parseInt(v('i-max'))||min*4;
+  const data={name,category:v('i-cat'),unit:v('i-unit'),current,min,max,cost:parseFloat(v('i-cost'))||0,vendorId:parseInt(v('i-vendor'))||null,coaId:parseInt(v('i-coa'))||null,parType:v('i-par-type')||'none',parQty:parseFloat(v('i-par-qty'))||0,location:v('i-location'),notes:v('i-notes'),updated:todayStr(),hotelId:currentHotelId};
+  if(editingItemId){
+    Object.assign(DB.inventory.find(x=>x.id===editingItemId),data);
+    addActivity(`"${name}" item updated`,'#b8860b');
+    showToast('Item updated!','success');
+  } else {
+    DB.inventory.push({id:nid('inventory'),...data});
+    addActivity(`New item added: "${name}"`,'#1a7a45');
+    showToast('Item added!','success');
+  }
+  closeM('m-item');renderInventory();updateAlertBadge();gsAutoSync();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ADJUST STOCK
+// ══════════════════════════════════════════════════════════
+function openAdjust(id){
+  adjustingItemId=id;
+  const item=DB.inventory.find(x=>x.id===id);
+  document.getElementById('m-adjust-info').innerHTML=`<div style="background:var(--surface2);border-radius:var(--r);padding:10px 12px;font-size:13px;"><strong>${item.name}</strong><br>Current stock: <strong>${item.current} ${item.unit}</strong></div>`;
+  document.getElementById('adj-qty').value='';
+  document.getElementById('adj-reason').value='';
+  openM('m-adjust');
+}
+
+function doAdjust(){
+  const item=DB.inventory.find(x=>x.id===adjustingItemId);
+  const type=v('adj-type');
+  const qty=parseInt(v('adj-qty'));
+  const reason=v('adj-reason')||'Manual adjustment';
+  if(isNaN(qty)||qty<0){showToast('Enter a valid quantity','error');return;}
+  const prev=item.current;
+  if(type==='set') item.current=qty;
+  else if(type==='add') item.current+=qty;
+  else if(type==='subtract') item.current=Math.max(0,item.current-qty);
+  item.updated=todayStr();
+  addActivity(`"${item.name}": ${prev} → ${item.current} ${item.unit} (${reason})`,'#b8860b');
+  closeM('m-adjust');renderInventory();updateAlertBadge();gsAutoSync();
+  showToast(`Stock updated: ${item.current} ${item.unit}`,'success');
+}
+
+// ══════════════════════════════════════════════════════════
+//  ORDERS
+// ══════════════════════════════════════════════════════════
+function renderOrders(){
+  const searchEl=document.getElementById('ord-search');
+  const stEl=document.getElementById('ord-st');
+  const search=searchEl?searchEl.value.toLowerCase():'';
+  const st=stEl?stEl.value:'';
+
+  const ords=hotelOrders().filter(o=>{
+    const ms=!search||o.id.toLowerCase().includes(search)||vname(o.vendorId).toLowerCase().includes(search);
+    const mst=!st||o.status===st;
+    return ms&&mst;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  let html=`<div class="toolbar">
+    <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="ord-search" placeholder="Search orders..." value="${search}" oninput="renderOrders()"></div>
+    <select class="filter-sel" id="ord-st" onchange="renderOrders()"><option value="">All Status</option><option value="pending" ${st==='pending'?'selected':''}>Pending</option><option value="delivered" ${st==='delivered'?'selected':''}>Delivered</option><option value="cancelled" ${st==='cancelled'?'selected':''}>Cancelled</option></select>
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Order #</th><th>Date</th><th>Vendor</th><th>Items</th><th>Total</th><th>Ordered By</th><th>Expected Delivery</th><th>Status</th><th></th></tr></thead>
+    <tbody>`;
+
+  if(ords.length){
+    ords.forEach(o=>{
+      const isPriority=o.priority==='urgent';
+      html+=`<tr>
+        <td><strong style="cursor:pointer;color:var(--blue)" onclick="viewOrderDetail('${o.id}')">${o.id}</strong>${isPriority?` <span style="font-size:10px;background:var(--red-l);color:var(--red);padding:1px 5px;border-radius:4px;">URGENT</span>`:''}  </td>
+        <td>${o.date}</td>
+        <td>${vname(o.vendorId)}</td>
+        <td style="font-size:12px">${o.items.map(i=>`${iname(i.itemId)} ×${i.qty}`).join('<br>')}</td>
+        <td><strong>${fmt(o.total)}</strong></td>
+        <td>${o.orderedBy}</td>
+        <td>${o.delivery||'—'}</td>
+        <td><span class="badge badge-${o.status}">${o.status}</span></td>
+        <td><div class="row-actions">
+          ${o.status==='pending'?`<button class="btn btn-xs btn-secondary" onclick="markDelivered('${o.id}')">✅ Delivered</button>`:''}
+          <button class="btn-icon" onclick="viewOrderDetail('${o.id}')">👁</button>
+        </div></td>
+      </tr>`;
+    });
+  } else {
+    html+=`<tr><td colspan="9" class="empty-state"><div class="empty-icon">🛒</div>No orders found</td></tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function openOrderModal(prefillItemId){
+  orderItemsTemp=[];
+  const oby=document.getElementById('o-by');
+  if(oby) oby.value=currentUser.name;
+  // populate vendor
+  const vs=document.getElementById('o-vendor');
+  vs.innerHTML='<option value="">-- Select Vendor --</option>'+DB.vendors.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  // populate items
+  const is=document.getElementById('o-item-sel');
+  is.innerHTML='<option value="">-- Select Item --</option>'+hotelInventory().map(i=>`<option value="${i.id}">${i.name} (${i.current} ${i.unit})</option>`).join('');
+  document.getElementById('o-notes').value='';
+  document.getElementById('o-delivery').value='';
+  if(prefillItemId){
+    const item=DB.inventory.find(x=>x.id===prefillItemId);
+    if(item){
+      const sugQty=Math.max(item.max-item.current,item.min);
+      orderItemsTemp.push({itemId:item.id,qty:sugQty});
+      if(item.vendorId) setTimeout(()=>{vs.value=item.vendorId;},10);
+    }
+  }
+  renderOrderItems();
+  openM('m-order');
+}
+
+function addOItem(){
+  const itemId=parseInt(document.getElementById('o-item-sel').value);
+  const qty=parseInt(document.getElementById('o-item-qty').value);
+  if(!itemId||!qty||qty<1){showToast('Select item and quantity','error');return;}
+  const ex=orderItemsTemp.find(x=>x.itemId===itemId);
+  if(ex) ex.qty+=qty; else orderItemsTemp.push({itemId,qty});
+  document.getElementById('o-item-qty').value='';
+  document.getElementById('o-item-sel').value='';
+  renderOrderItems();
+}
+
+function renderOrderItems(){
+  const list=document.getElementById('o-items-list');
+  let total=0;
+  list.innerHTML=orderItemsTemp.length?orderItemsTemp.map((oi,idx)=>{
+    const item=DB.inventory.find(x=>x.id===oi.itemId);
+    const coa=item?getCoa(item.coaId):null;
+    const sub=item?item.cost*oi.qty:0;total+=sub;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:8px;">
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:600">${item?item.name:'?'}</div>
+        ${coa?`<div style="font-size:10px;color:var(--purple);font-weight:600;margin-top:1px;">${coa.code} — ${coa.name}</div>`:''}
+      </div>
+      <div style="font-size:12px;color:var(--text2)">× ${oi.qty} ${item?.unit||''}</div>
+      <div style="font-size:12px;font-weight:600">${fmt(sub)}</div>
+      <button onclick="removeOItem(${idx})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;">✕</button>
+    </div>`;
+  }).join(''):`<div style="color:var(--text3);font-size:12px;text-align:center;padding:8px;">No items added</div>`;
+  document.getElementById('o-total').textContent=fmt(total);
+}
+
+function removeOItem(idx){orderItemsTemp.splice(idx,1);renderOrderItems();}
+
+function saveOrder(){
+  const vendorId=parseInt(document.getElementById('o-vendor').value);
+  const by=document.getElementById('o-by').value.trim();
+  if(!vendorId){showToast('Select a vendor','error');return;}
+  if(!orderItemsTemp.length){showToast('Add at least one item','error');return;}
+  if(!by){showToast('Enter who is ordering','error');return;}
+  const total=orderItemsTemp.reduce((s,oi)=>{
+    const item=DB.inventory.find(x=>x.id===oi.itemId);
+    return s+(item?item.cost*oi.qty:0);
+  },0);
+  const ordId=`PO-${String(nid('order')).padStart(3,'0')}`;
+  const newOrd={id:ordId,hotelId:currentHotelId,date:todayStr(),vendorId,items:[...orderItemsTemp],total,orderedBy:by,delivery:document.getElementById('o-delivery').value,status:'pending',notes:document.getElementById('o-notes').value,priority:document.getElementById('o-priority').value};
+  DB.orders.unshift(newOrd);
+  addActivity(`Order ${ordId} placed with ${vname(vendorId)}`,'#1a4fa0');
+  closeM('m-order');renderOrders();updateAlertBadge();gsAutoSync();
+  showToast(`Order ${ordId} placed!`,'success');
+}
+
+function markDelivered(id){
+  const o=DB.orders.find(x=>x.id===id);
+  if(!o) return;
+  o.status='delivered';
+  o.items.forEach(oi=>{
+    const item=DB.inventory.find(i=>i.id===oi.itemId);
+    if(item){item.current+=oi.qty;item.updated=todayStr();}
+  });
+  addActivity(`Order ${id} delivered — stock updated`,'#1a7a45');
+  renderOrders();updateAlertBadge();gsAutoSync();
+  showToast('Order marked delivered & stock updated!','success');
+}
+
+function viewOrderDetail(id){
+  const o=DB.orders.find(x=>x.id===id);
+  if(!o) return;
+  const vendor=DB.vendors.find(v=>v.id===o.vendorId);
+  document.getElementById('m-od-title').textContent=`Order ${o.id}`;
+  let body=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div><div style="font-size:11px;color:var(--text3)">Vendor</div><div style="font-weight:600">${vendor?vendor.name:'—'}</div></div>
+    <div><div style="font-size:11px;color:var(--text3)">Date</div><div style="font-weight:600">${o.date}</div></div>
+    <div><div style="font-size:11px;color:var(--text3)">Ordered By</div><div style="font-weight:600">${o.orderedBy}</div></div>
+    <div><div style="font-size:11px;color:var(--text3)">Expected Delivery</div><div style="font-weight:600">${o.delivery||'—'}</div></div>
+    <div><div style="font-size:11px;color:var(--text3)">Status</div><span class="badge badge-${o.status}">${o.status}</span></div>
+    <div><div style="font-size:11px;color:var(--text3)">Priority</div><span class="badge ${o.priority==='urgent'?'badge-critical':'badge-ok'}">${o.priority}</span></div>
+  </div>
+  ${o.notes?`<div style="background:var(--surface2);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;">📝 ${o.notes}</div>`:''}
+  <hr class="div">
+  <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Items Ordered</div>
+  <table style="font-size:12px;"><thead><tr><th>Item</th><th>COA Code</th><th>GL</th><th>Cost Centre</th><th>Qty</th><th>Unit Cost</th><th>Subtotal</th></tr></thead><tbody>`;
+  o.items.forEach(oi=>{
+    const item=DB.inventory.find(i=>i.id===oi.itemId);
+    const cost=item?item.cost:0;
+    const coa=item?getCoa(item.coaId):null;
+    body+=`<tr>
+      <td>${item?item.name:'—'}</td>
+      <td>${coa?`<span style="font-family:monospace;font-size:11px;font-weight:700;background:var(--purple-l);color:var(--purple);padding:2px 6px;border-radius:4px;">${coa.code}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-size:11px;color:var(--text2)">${coa?coa.gl:'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${coa?coa.costCentre:'—'}</td>
+      <td>${oi.qty}</td>
+      <td>${getCurrency()}${cost.toFixed(2)}</td>
+      <td><strong>${fmt(cost*oi.qty)}</strong></td>
+    </tr>`;
+  });
+  body+=`</tbody></table>
+  <div style="margin-top:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--r);font-weight:600;font-size:13px;">Total: ${fmt(o.total)}</div>`;
+  if(vendor){
+    body+=`<div style="margin-top:10px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;"><div style="font-weight:600;margin-bottom:4px;">Vendor Contact</div><div>${vendor.contact} · ${vendor.phone}</div><div style="color:var(--blue)">${vendor.email}</div></div>`;
+  }
+  document.getElementById('m-od-body').innerHTML=body;
+  document.getElementById('m-od-footer').innerHTML=`<button class="btn btn-secondary" onclick="closeM('m-order-detail')">Close</button>${o.status==='pending'?`<button class="btn btn-primary" onclick="markDelivered('${o.id}');closeM('m-order-detail')">Mark Delivered</button>`:''}`;
+  openM('m-order-detail');
+}
+
+// ══════════════════════════════════════════════════════════
+//  VENDORS
+// ══════════════════════════════════════════════════════════
+function renderVendors(){
+  const searchEl=document.getElementById('vend-search');
+  const search=searchEl?searchEl.value.toLowerCase():'';
+  const filtered=DB.vendors.filter(v=>!search||v.name.toLowerCase().includes(search)||v.category.toLowerCase().includes(search));
+
+  let html=`<div class="toolbar">
+    <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="vend-search" placeholder="Search vendors..." value="${search}" oninput="renderVendors()"></div>
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>Email</th><th>Terms</th><th>Total Orders</th><th>Total Spend</th><th></th></tr></thead>
+    <tbody>`;
+
+  if(filtered.length){
+    filtered.forEach(v=>{
+      const vOrders=DB.orders.filter(o=>o.vendorId===v.id&&o.hotelId===currentHotelId);
+      const spend=vOrders.reduce((s,o)=>s+o.total,0);
+      html+=`<tr>
+        <td><strong>${v.name}</strong>${v.address?`<div style="font-size:11px;color:var(--text3)">${v.address.split(',')[0]}</div>`:''}</td>
+        <td><span class="cat-pill">${v.category}</span></td>
+        <td>${v.contact}</td>
+        <td>${v.phone}</td>
+        <td style="color:var(--blue);font-size:12px">${v.email}</td>
+        <td><span class="badge badge-ok">${v.terms}</span></td>
+        <td>${vOrders.length}</td>
+        <td><strong>${fmt(spend)}</strong></td>
+        <td><div class="row-actions">
+          <button class="btn-icon" onclick="openVendorModal(${v.id})">✏️</button>
+          <button class="btn btn-xs btn-primary" onclick="openOrderModal();setTimeout(()=>document.getElementById('o-vendor').value=${v.id},50)">Order</button>
+        </div></td>
+      </tr>`;
+    });
+  } else {
+    html+=`<tr><td colspan="9" class="empty-state"><div class="empty-icon">🏢</div>No vendors found</td></tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function openVendorModal(id){
+  editingVendorId=id||null;
+  const vend=id?DB.vendors.find(x=>x.id===id):null;
+  document.getElementById('m-vendor-title').textContent=id?'Edit Vendor':'Add Vendor';
+  document.getElementById('v-name').value=vend?vend.name:'';
+  document.getElementById('v-cat').value=vend?vend.category:'Linens & Towels';
+  document.getElementById('v-contact').value=vend?vend.contact:'';
+  document.getElementById('v-phone').value=vend?vend.phone:'';
+  document.getElementById('v-email').value=vend?vend.email:'';
+  document.getElementById('v-terms').value=vend?vend.terms:'Net 30';
+  document.getElementById('v-address').value=vend?vend.address:'';
+  openM('m-vendor');
+}
+
+function saveVendor(){
+  const name=v('v-name').trim();
+  if(!name){showToast('Vendor name required','error');return;}
+  const data={name,category:v('v-cat'),contact:v('v-contact'),phone:v('v-phone'),email:v('v-email'),terms:v('v-terms'),address:v('v-address'),hotelId:null};
+  if(editingVendorId){
+    Object.assign(DB.vendors.find(x=>x.id===editingVendorId),data);
+    showToast('Vendor updated!','success');
+  } else {
+    DB.vendors.push({id:nid('vendor'),...data});
+    showToast(`Vendor "${name}" added!`,'success');
+  }
+  closeM('m-vendor');renderVendors();gsAutoSync();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ALERTS
+// ══════════════════════════════════════════════════════════
+function renderAlerts(){
+  const alertItems=getAlertItems().sort((a,b)=>(a.current/a.min)-(b.current/b.min));
+  let html=`<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Category</th><th>Location</th><th>Current</th><th>Min Level</th><th>Deficit</th><th>Suggested Vendor</th><th>Priority</th><th></th></tr></thead>
+    <tbody>`;
+
+  if(alertItems.length){
+    alertItems.forEach(item=>{
+      const st=stockStatus(item);
+      const deficit=Math.max(0,item.min-item.current);
+      html+=`<tr>
+        <td><strong>${item.name}</strong></td>
+        <td><span class="cat-pill">${item.category}</span></td>
+        <td style="font-size:11px;color:var(--text3)">${item.location||'—'}</td>
+        <td style="${st==='critical'?'color:var(--red);font-weight:600':''}">${item.current} ${item.unit}</td>
+        <td>${item.min} ${item.unit}</td>
+        <td><strong style="color:var(--red)">-${deficit} ${item.unit}</strong></td>
+        <td style="font-size:12px">${vname(item.vendorId)}</td>
+        <td><span class="badge badge-${st}">${st==='critical'?'🚨 CRITICAL':'⚠️ LOW'}</span></td>
+        <td><button class="btn btn-xs btn-primary" onclick="openOrderModal(${item.id})">Order Now</button></td>
+      </tr>`;
+    });
+  } else {
+    html+=`<tr><td colspan="9" class="empty-state"><div class="empty-icon">✅</div>All items at good stock levels!</td></tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  REPORTS
+// ══════════════════════════════════════════════════════════
+function renderReports(){
+  const inv=hotelInventory();
+  const ords=hotelOrders();
+  const totalSpend=ords.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+o.total,0);
+  const goodItems=inv.filter(i=>stockStatus(i)==='ok').length;
+  const health=inv.length?Math.round(goodItems/inv.length*100):0;
+  const invValue=inv.reduce((s,i)=>s+i.current*i.cost,0);
+
+  let html=`<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="stat-card stat-gold"><div class="stat-icon">💰</div><div class="stat-label">Total Spend</div><div class="stat-value">${fmt(totalSpend)}</div><div class="stat-sub">all orders</div></div>
+    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Total Orders</div><div class="stat-value">${ords.length}</div><div class="stat-sub">all time</div></div>
+    <div class="stat-card stat-green"><div class="stat-icon">📦</div><div class="stat-label">Stock Value</div><div class="stat-value">${fmt(invValue)}</div><div class="stat-sub">current inventory</div></div>
+    <div class="stat-card ${health>=80?'stat-green':health>=50?'stat-orange':'stat-red'}"><div class="stat-icon">📊</div><div class="stat-label">Stock Health</div><div class="stat-value">${health}%</div><div class="stat-sub">items at good level</div></div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Spending by Category</span></div>
+      <div class="card-body">`;
+
+  const catSpend={};
+  ords.forEach(o=>o.items.forEach(oi=>{
+    const item=DB.inventory.find(x=>x.id===oi.itemId);
+    if(item){catSpend[item.category]=(catSpend[item.category]||0)+item.cost*oi.qty;}
+  }));
+  const maxS=Math.max(...Object.values(catSpend),1);
+  Object.entries(catSpend).sort((a,b)=>b[1]-a[1]).forEach(([cat,amt])=>{
+    html+=`<div class="spend-bar-wrap"><div class="spend-bar-label"><span>${cat}</span><span style="font-weight:600">${fmt(amt)}</span></div><div class="spend-bar-bg"><div class="spend-bar-fill" style="width:${Math.round(amt/maxS*100)}%;background:var(--gold)"></div></div></div>`;
+  });
+  if(!Object.keys(catSpend).length) html+=`<div class="empty-state">No order data yet</div>`;
+
+  html+=`</div></div>
+    <div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-header"><span class="card-title">Top Vendors</span></div>
+        <div class="card-body">`;
+
+  const vendSpend={};
+  ords.forEach(o=>{vendSpend[o.vendorId]=(vendSpend[o.vendorId]||0)+o.total;});
+  const maxV=Math.max(...Object.values(vendSpend),1);
+  Object.entries(vendSpend).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([vid,amt])=>{
+    html+=`<div class="spend-bar-wrap"><div class="spend-bar-label"><span style="font-size:12px">${vname(parseInt(vid))}</span><span style="font-weight:600;font-size:12px">${fmt(amt)}</span></div><div class="spend-bar-bg"><div class="spend-bar-fill" style="width:${Math.round(amt/maxV*100)}%;background:var(--blue)"></div></div></div>`;
+  });
+
+  html+=`</div></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Order Summary</span></div>
+        <div class="card-body">
+          <div class="info-row"><span class="info-label">Delivered</span><span style="color:var(--green);font-weight:600">${ords.filter(o=>o.status==='delivered').length}</span></div>
+          <div class="info-row"><span class="info-label">Pending</span><span style="color:var(--orange);font-weight:600">${ords.filter(o=>o.status==='pending').length}</span></div>
+          <div class="info-row"><span class="info-label">Avg Order Value</span><span style="font-weight:600">${ords.length?fmt(totalSpend/ords.length):fmt(0)}</span></div>
+          <div class="info-row"><span class="info-label">Active Vendors</span><span style="font-weight:600">${Object.keys(vendSpend).length}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  CHART OF ACCOUNTS — manage COA list
+// ══════════════════════════════════════════════════════════
+function renderCoa(){
+  const searchEl=document.getElementById('coa-search');
+  const search=searchEl?searchEl.value.toLowerCase():'';
+  const isAdmin=currentUser.role==='admin';
+
+  const filtered=DB.coa.filter(c=>!search||c.code.toLowerCase().includes(search)||c.name.toLowerCase().includes(search)||c.costCentre.toLowerCase().includes(search));
+
+  let html=`
+  <div style="background:var(--purple-l);border:1px solid #d4b8f0;border-radius:var(--r);padding:11px 14px;font-size:12px;color:var(--purple);margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:18px;">📒</span>
+    <span>This is your master Chart of Accounts list. <strong>Only admin / accounting team</strong> should add or edit entries here. Managers select from this list when adding inventory items — they never need to type or remember a code.</span>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="coa-search" placeholder="Search by code, name or cost centre..." value="${search}" oninput="renderCoa()"></div>
+    ${isAdmin?`<button class="btn btn-primary" onclick="openCoaModal()">+ Add COA Entry</button>`:''}
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Account Code</th><th>Account Name</th><th>Type</th><th>Cost Centre</th><th>GL Code</th><th>Description</th><th>Items Using</th>${isAdmin?'<th></th>':''}</tr></thead>
+    <tbody>`;
+
+  filtered.forEach(c=>{
+    const itemCount=DB.inventory.filter(i=>i.coaId===c.id).length;
+    const typeColor={Expense:'var(--red)',Asset:'var(--blue)',Liability:'var(--orange)',Revenue:'var(--green)'}[c.type]||'var(--text2)';
+    html+=`<tr>
+      <td><span style="font-family:monospace;font-size:13px;font-weight:700;background:var(--purple-l);color:var(--purple);padding:3px 8px;border-radius:5px;">${c.code}</span></td>
+      <td><strong>${c.name}</strong></td>
+      <td><span style="font-size:11px;font-weight:600;color:${typeColor}">${c.type}</span></td>
+      <td><span class="cat-pill">${c.costCentre}</span></td>
+      <td style="font-family:monospace;font-size:11px;color:var(--text2)">${c.gl}</td>
+      <td style="font-size:12px;color:var(--text3)">${c.description}</td>
+      <td style="text-align:center">${itemCount?`<span style="background:var(--blue-l);color:var(--blue);font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;">${itemCount} items</span>`:'<span style="color:var(--text3);font-size:11px;">—</span>'}</td>
+      ${isAdmin?`<td><div class="row-actions"><button class="btn-icon" onclick="openCoaModal(${c.id})">✏️</button></div></td>`:''}
+    </tr>`;
+  });
+  if(!filtered.length) html+=`<tr><td colspan="8" class="empty-state"><div class="empty-icon">📒</div>No COA entries found</td></tr>`;
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function openCoaModal(id){
+  const c=id?DB.coa.find(x=>x.id===id):null;
+  document.getElementById('m-coa-title').textContent=id?'Edit COA Entry':'Add COA Entry';
+  document.getElementById('coa-code').value=c?c.code:'';
+  document.getElementById('coa-name').value=c?c.name:'';
+  document.getElementById('coa-type').value=c?c.type:'Expense';
+  document.getElementById('coa-cc').value=c?c.costCentre:'';
+  document.getElementById('coa-gl').value=c?c.gl:'';
+  document.getElementById('coa-desc').value=c?c.description:'';
+  openM('m-coa');
+  // store editing id
+  document.getElementById('m-coa').dataset.editId=id||'';
+}
+
+function saveCoa(){
+  const code=v('coa-code').trim();
+  const name=v('coa-name').trim();
+  if(!code||!name){showToast('Code and name are required','error');return;}
+  const editId=parseInt(document.getElementById('m-coa').dataset.editId)||null;
+  const data={code,name,type:v('coa-type'),costCentre:v('coa-cc'),gl:v('coa-gl'),description:v('coa-desc')};
+  if(editId){
+    Object.assign(DB.coa.find(x=>x.id===editId),data);
+    showToast('COA entry updated!','success');
+  } else {
+    DB.coa.push({id:nid('coa'),...data});
+    showToast(`COA ${code} — ${name} added!`,'success');
+  }
+  closeM('m-coa');renderCoa();gsAutoSync();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ACCOUNTING REPORT — full COA-based expense report
+// ══════════════════════════════════════════════════════════
+function renderAccounting(){
+  const inv=hotelInventory();
+  const ords=hotelOrders();
+  const hotel=DB.hotels.find(h=>h.id===currentHotelId);
+  const cur=hotel?hotel.currency:'$';
+
+  // Build spend per COA from orders
+  const coaSpend={};
+  const coaQty={};
+  ords.forEach(o=>{
+    o.items.forEach(oi=>{
+      const item=DB.inventory.find(x=>x.id===oi.itemId);
+      if(!item) return;
+      const cid=item.coaId||'unassigned';
+      coaSpend[cid]=(coaSpend[cid]||0)+item.cost*oi.qty;
+      coaQty[cid]=(coaQty[cid]||0)+oi.qty;
+    });
+  });
+
+  // Stock value per COA
+  const coaStockVal={};
+  inv.forEach(i=>{
+    const cid=i.coaId||'unassigned';
+    coaStockVal[cid]=(coaStockVal[cid]||0)+i.current*i.cost;
+  });
+
+  const totalSpend=Object.values(coaSpend).reduce((s,v)=>s+v,0);
+  const totalStock=Object.values(coaStockVal).reduce((s,v)=>s+v,0);
+
+  let html=`
+  <div class="print-header">
+    <h1>Accounting Report — ${hotel?hotel.name:'Hotel'}</h1>
+    <p>Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+  </div>
+
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+    <div class="stat-card stat-gold"><div class="stat-icon">💰</div><div class="stat-label">Total Purchases</div><div class="stat-value">${cur}${totalSpend.toFixed(2)}</div><div class="stat-sub">all orders</div></div>
+    <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Stock on Hand Value</div><div class="stat-value">${cur}${totalStock.toFixed(2)}</div><div class="stat-sub">current inventory</div></div>
+    <div class="stat-card"><div class="stat-icon">📒</div><div class="stat-label">COA Codes Used</div><div class="stat-value">${Object.keys(coaSpend).filter(k=>k!=='unassigned').length}</div><div class="stat-sub">active accounts</div></div>
+    <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-label">Total Orders</div><div class="stat-value">${ords.length}</div><div class="stat-sub">all time</div></div>
+  </div>
+
+  <!-- SPEND BY COA -->
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-header">
+      <span class="card-title">Expenditure by Chart of Account</span>
+      <span style="font-size:12px;color:var(--text3)">For accounting journal entries</span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>COA Code</th><th>GL Code</th><th>Account Name</th><th>Type</th><th>Cost Centre</th><th>Total Purchased</th><th>Stock on Hand Value</th><th>% of Total Spend</th></tr></thead>
+      <tbody>`;
+
+  // Assigned COA rows
+  DB.coa.filter(c=>coaSpend[c.id]||coaStockVal[c.id]).sort((a,b)=>(coaSpend[b.id]||0)-(coaSpend[a.id]||0)).forEach(c=>{
+    const spend=coaSpend[c.id]||0;
+    const stockV=coaStockVal[c.id]||0;
+    const pct=totalSpend?Math.round(spend/totalSpend*100):0;
+    const typeColor={Expense:'var(--red)',Asset:'var(--blue)',Liability:'var(--orange)',Revenue:'var(--green)'}[c.type]||'var(--text2)';
+    html+=`<tr>
+      <td><span style="font-family:monospace;font-size:12px;font-weight:700;background:var(--purple-l);color:var(--purple);padding:2px 7px;border-radius:4px;">${c.code}</span></td>
+      <td style="font-family:monospace;font-size:11px;color:var(--text2)">${c.gl}</td>
+      <td><strong>${c.name}</strong></td>
+      <td><span style="font-size:11px;font-weight:600;color:${typeColor}">${c.type}</span></td>
+      <td><span class="cat-pill">${c.costCentre}</span></td>
+      <td><strong>${cur}${spend.toFixed(2)}</strong></td>
+      <td>${cur}${stockV.toFixed(2)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:50px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:var(--purple);border-radius:2px;"></div>
+          </div>
+          <span style="font-size:11px;font-weight:600">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  // Unassigned row
+  if(coaSpend['unassigned']){
+    html+=`<tr style="background:var(--orange-l)">
+      <td><span style="font-size:11px;color:var(--orange);font-weight:600;">UNASSIGNED</span></td>
+      <td>—</td><td style="color:var(--orange)">No COA code assigned</td><td>—</td><td>—</td>
+      <td><strong style="color:var(--orange)">${cur}${coaSpend['unassigned'].toFixed(2)}</strong></td>
+      <td>${cur}${(coaStockVal['unassigned']||0).toFixed(2)}</td>
+      <td style="font-size:11px;color:var(--orange)">Assign COA to items</td>
+    </tr>`;
+  }
+
+  // Total row
+  html+=`<tr style="background:var(--surface2)">
+    <td colspan="5" style="font-weight:700;font-size:13px;">TOTAL</td>
+    <td style="font-weight:700;font-size:14px;color:var(--gold-d)">${cur}${totalSpend.toFixed(2)}</td>
+    <td style="font-weight:700;font-size:14px;color:var(--blue)">${cur}${totalStock.toFixed(2)}</td>
+    <td style="font-weight:700">100%</td>
+  </tr>`;
+  html+=`</tbody></table></div></div>
+
+  <!-- FULL ITEM DETAIL WITH COA -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Full Inventory — COA Detail</span>
+      <span style="font-size:12px;color:var(--text3)">Every item with its account code — for invoice matching</span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item Name</th><th>Category</th><th>COA Code</th><th>GL Code</th><th>Cost Centre</th><th>Account Name</th><th>Unit Cost</th><th>In Stock</th><th>Stock Value</th></tr></thead>
+      <tbody>`;
+
+  inv.sort((a,b)=>{
+    const ca=getCoa(a.coaId);const cb=getCoa(b.coaId);
+    return (ca?ca.code:'ZZZ').localeCompare(cb?cb.code:'ZZZ');
+  }).forEach(item=>{
+    const coa=getCoa(item.coaId);
+    const stockV=item.current*item.cost;
+    html+=`<tr>
+      <td><strong>${item.name}</strong></td>
+      <td><span class="cat-pill">${item.category}</span></td>
+      <td>${coa?`<span style="font-family:monospace;font-size:11px;font-weight:700;background:var(--purple-l);color:var(--purple);padding:2px 6px;border-radius:4px;">${coa.code}</span>`:'<span style="color:var(--orange);font-size:11px;font-weight:600;">Not set</span>'}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--text2)">${coa?coa.gl:'—'}</td>
+      <td style="font-size:11px">${coa?`<span class="cat-pill">${coa.costCentre}</span>`:'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${coa?coa.name:'—'}</td>
+      <td>${cur}${item.cost.toFixed(2)}</td>
+      <td>${item.current} ${item.unit}</td>
+      <td><strong>${cur}${stockV.toFixed(2)}</strong></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  PAR & OCCUPANCY PLANNER
+// ══════════════════════════════════════════════════════════
+function renderPAR(){
+  const hotel=DB.hotels.find(h=>h.id===currentHotelId);
+  const totalRooms=hotel?hotel.rooms:100;
+  const cur=hotel?hotel.currency:'$';
+  const inv=hotelInventory().filter(i=>i.parType&&i.parType!=='none');
+
+  // Build daily grid if needed
+  if(!Object.keys(parDailyOcc).length){
+    const today=new Date();
+    for(let d=0;d<14;d++){
+      const dd=new Date(today);dd.setDate(today.getDate()+d);
+      const key=dd.toISOString().split('T')[0];
+      parDailyOcc[key]=Math.round(totalRooms*0.75);
+    }
+  }
+
+  // Calculate PAR needs
+  function calcPAR(){
+    const days=Object.keys(parDailyOcc).sort().slice(0,parDays);
+    const results=[];
+    inv.forEach(item=>{
+      let needed=0;
+      if(item.parType==='daily'){
+        days.forEach(d=>{needed+=(parDailyOcc[d]||0)*item.parQty;});
+      } else if(item.parType==='stay'){
+        // count unique stays — simplified: use first-night occupancy as proxy
+        days.forEach(d=>{needed+=(parDailyOcc[d]||0)*item.parQty;});
+        // for stay items divide by avg stay length (assume 2 nights)
+        needed=Math.round(needed/2);
+      }
+      const withBuffer=Math.ceil(needed*(1+parBuffer/100));
+      const shortfall=Math.max(0,withBuffer-item.current);
+      const orderQty=shortfall>0?shortfall:0;
+      results.push({item,needed:Math.ceil(needed),withBuffer,inStock:item.current,shortfall,orderQty,orderCost:orderQty*item.cost});
+    });
+    return results;
+  }
+
+  parResults=calcPAR();
+  const totalOrderCost=parResults.reduce((s,r)=>s+r.orderCost,0);
+  const itemsToOrder=parResults.filter(r=>r.orderQty>0).length;
+  const totalRoomsForPeriod=Object.values(parDailyOcc).slice(0,parDays).reduce((s,v)=>s+v,0);
+  const avgOcc=parDays>0?Math.round(totalRoomsForPeriod/parDays/totalRooms*100):0;
+
+  // Build daily inputs
+  const days=Object.keys(parDailyOcc).sort().slice(0,parDays);
+  let dailyInputs=days.map(d=>{
+    const dt=new Date(d+'T00:00:00');
+    const dayName=dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const occ=parDailyOcc[d]||0;
+    const pct=Math.round(occ/totalRooms*100);
+    const col=pct>=80?'var(--green)':pct>=50?'var(--orange)':'var(--red)';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:70px;">
+      <div style="font-size:10px;color:var(--text3);text-align:center;">${dayName}</div>
+      <input type="number" min="0" max="${totalRooms}" value="${occ}"
+        style="width:60px;text-align:center;padding:5px 4px;font-size:12px;font-weight:600;"
+        onchange="parDailyOcc['${d}']=parseInt(this.value)||0;renderPAR()">
+      <div style="font-size:10px;font-weight:600;color:${col}">${pct}%</div>
+      <div style="width:8px;height:${Math.max(4,Math.round(pct*0.4))}px;background:${col};border-radius:2px;"></div>
+    </div>`;
+  }).join('');
+
+  let html=`
+  <div class="print-header">
+    <h1>PAR Occupancy Report — ${hotel?hotel.name:''}</h1>
+    <p>Period: ${days[0]||''} to ${days[days.length-1]||''} &nbsp;|&nbsp; Avg Occupancy: ${avgOcc}% &nbsp;|&nbsp; Buffer: ${parBuffer}%</p>
+  </div>
+
+  <!-- SUMMARY STRIP -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
+    <div class="stat-card"><div class="stat-icon">🏨</div><div class="stat-label">Total Rooms</div><div class="stat-value">${totalRooms}</div><div class="stat-sub">this property</div></div>
+    <div class="stat-card stat-gold"><div class="stat-icon">📅</div><div class="stat-label">Planning Period</div><div class="stat-value">${parDays} days</div><div class="stat-sub">avg ${avgOcc}% occupancy</div></div>
+    <div class="stat-card stat-orange"><div class="stat-icon">📦</div><div class="stat-label">Items to Order</div><div class="stat-value">${itemsToOrder}</div><div class="stat-sub">based on PAR needs</div></div>
+    <div class="stat-card stat-red"><div class="stat-icon">💰</div><div class="stat-label">Est. Order Cost</div><div class="stat-value">${cur}${totalOrderCost.toFixed(0)}</div><div class="stat-sub">with ${parBuffer}% buffer</div></div>
+    <div class="stat-card stat-green"><div class="stat-icon">✅</div><div class="stat-label">Items Sufficient</div><div class="stat-value">${parResults.filter(r=>r.orderQty===0).length}</div><div class="stat-sub">no order needed</div></div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-header"><span class="card-title">Occupancy Forecast Settings</span></div>
+    <div class="card-body">
+
+      <!-- Mode toggle -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="view-toggle">
+          <button class="vt-btn ${parMode==='average'?'active':''}" onclick="parMode='average';renderPAR()">📊 Average %</button>
+          <button class="vt-btn ${parMode==='daily'?'active':''}" onclick="parMode='daily';renderPAR()">📅 Day by Day</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:16px;">
+          <label style="font-size:12px;color:var(--text2);font-weight:500;">Planning days:</label>
+          <select onchange="parDays=parseInt(this.value);renderPAR()" style="width:auto;">
+            <option value="7" ${parDays===7?'selected':''}>7 days</option>
+            <option value="10" ${parDays===10?'selected':''}>10 days</option>
+            <option value="14" ${parDays===14?'selected':''}>14 days</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:12px;color:var(--text2);font-weight:500;">Safety buffer:</label>
+          <select onchange="parBuffer=parseInt(this.value);renderPAR()" style="width:auto;">
+            <option value="0" ${parBuffer===0?'selected':''}>0% (exact)</option>
+            <option value="5" ${parBuffer===5?'selected':''}>5%</option>
+            <option value="10" ${parBuffer===10?'selected':''}>10%</option>
+            <option value="15" ${parBuffer===15?'selected':''}>15%</option>
+            <option value="20" ${parBuffer===20?'selected':''}>20%</option>
+          </select>
+        </div>
+      </div>
+
+      ${parMode==='average'?`
+      <!-- Average mode -->
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">Average Occupancy % for next ${parDays} days</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" min="0" max="100" value="${parOccupancyAvg}" step="1" style="flex:1;"
+              oninput="parOccupancyAvg=parseInt(this.value);document.getElementById('par-avg-val').textContent=this.value+'%';applyAvgOcc()">
+            <span id="par-avg-val" style="font-size:18px;font-weight:700;min-width:48px;color:var(--gold-d)">${parOccupancyAvg}%</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:2px;">
+            <span>0%</span><span>50%</span><span>100%</span>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--r);padding:12px 16px;min-width:180px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Rooms occupied per night</div>
+          <div style="font-size:24px;font-weight:700;font-family:'DM Serif Display',serif;color:var(--text)">${Math.round(totalRooms*parOccupancyAvg/100)}</div>
+          <div style="font-size:11px;color:var(--text3)">out of ${totalRooms} rooms</div>
+        </div>
+        <button class="btn btn-primary" onclick="applyAvgOcc();renderPAR()">Apply & Calculate</button>
+      </div>
+      `:`
+      <!-- Daily mode -->
+      <div style="margin-bottom:8px;font-size:12px;color:var(--text2);">Enter the number of occupied rooms for each night. The bar height shows occupancy rate.</div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;align-items:flex-end;">${dailyInputs}</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="setAllDaily(${Math.round(totalRooms*0.5)})">Set all 50%</button>
+        <button class="btn btn-secondary btn-sm" onclick="setAllDaily(${Math.round(totalRooms*0.75)})">Set all 75%</button>
+        <button class="btn btn-secondary btn-sm" onclick="setAllDaily(${Math.round(totalRooms*0.9)})">Set all 90%</button>
+        <button class="btn btn-secondary btn-sm" onclick="setAllDaily(${totalRooms})">Set all 100%</button>
+      </div>
+      `}
+    </div>
+  </div>
+
+  <!-- PAR RESULTS TABLE -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">PAR Order Requirement — What to Order</span>
+      <span style="font-size:12px;color:var(--text3)">Based on ${parDays}-day forecast with ${parBuffer}% safety buffer</span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>PAR Type</th>
+          <th>PAR / Room</th>
+          <th>Total Needed</th>
+          <th>+ ${parBuffer}% Buffer</th>
+          <th>In Stock Now</th>
+          <th>Shortfall</th>
+          <th>Order Qty</th>
+          <th>Est. Cost</th>
+          <th>Vendor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  parResults.sort((a,b)=>b.orderQty-a.orderQty).forEach(r=>{
+    const {item,needed,withBuffer,inStock,shortfall,orderQty,orderCost}=r;
+    const needOrder=orderQty>0;
+    html+=`<tr style="${needOrder?'background:#fffbf0':''}">
+      <td>
+        <strong>${item.name}</strong>
+        <div style="font-size:10px;color:var(--text3)">${item.category}</div>
+      </td>
+      <td>
+        <span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:${item.parType==='daily'?'var(--blue-l)':'var(--green-l)'};color:${item.parType==='daily'?'var(--blue)':'var(--green)'}">
+          ${item.parType==='daily'?'Daily':'Per Stay'}
+        </span>
+      </td>
+      <td style="font-weight:600">${item.parQty} ${item.unit}</td>
+      <td style="font-weight:600">${needed} ${item.unit}</td>
+      <td style="color:var(--text2)">${withBuffer} ${item.unit}</td>
+      <td>
+        <span style="font-weight:600;color:${inStock>=withBuffer?'var(--green)':inStock>=needed?'var(--orange)':'var(--red)'}">${inStock}</span>
+        <span style="font-size:10px;color:var(--text3)"> ${item.unit}</span>
+      </td>
+      <td>
+        ${shortfall>0
+          ?`<strong style="color:var(--red)">-${shortfall} ${item.unit}</strong>`
+          :`<span style="color:var(--green);font-size:12px;">✓ Sufficient</span>`}
+      </td>
+      <td>
+        ${needOrder
+          ?`<span style="font-size:14px;font-weight:700;color:var(--red)">${orderQty} ${item.unit}</span>`
+          :`<span style="color:var(--text3);font-size:12px;">—</span>`}
+      </td>
+      <td>
+        ${needOrder?`<strong style="color:var(--gold-d)">${cur}${orderCost.toFixed(2)}</strong>`:'—'}
+      </td>
+      <td style="font-size:11px">${vname(item.vendorId)}</td>
+      <td>
+        ${needOrder?`<button class="btn btn-xs btn-primary" onclick="openOrderModal(${item.id})">Order Now</button>`:''}
+      </td>
+    </tr>`;
+  });
+
+  if(!parResults.length){
+    html+=`<tr><td colspan="11" class="empty-state"><div class="empty-icon">🛏️</div>No items have PAR levels set. Edit items and set PAR type and quantity.</td></tr>`;
+  }
+
+  // Totals row
+  html+=`<tr style="background:var(--surface2)">
+    <td colspan="7" style="font-weight:700;font-size:13px;">TOTAL ESTIMATED ORDER COST</td>
+    <td colspan="4" style="font-weight:700;font-size:15px;color:var(--gold-d)">${cur}${totalOrderCost.toFixed(2)}</td>
+  </tr>`;
+
+  html+=`</tbody></table></div></div>`;
+
+  // Order all button
+  if(itemsToOrder>0){
+    html+=`<div style="margin-top:16px;padding:14px 18px;background:var(--gold-l);border:1px solid var(--gold);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-weight:600;font-size:14px;">Ready to order? ${itemsToOrder} items need restocking based on your occupancy forecast.</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">Total estimated cost: <strong>${cur}${totalOrderCost.toFixed(2)}</strong> with ${parBuffer}% safety buffer</div>
+      </div>
+      <button class="btn btn-primary" onclick="openOrderModal()">Create Purchase Order</button>
+    </div>`;
+  }
+
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function applyAvgOcc(){
+  const hotel=DB.hotels.find(h=>h.id===currentHotelId);
+  const totalRooms=hotel?hotel.rooms:100;
+  const rooms=Math.round(totalRooms*parOccupancyAvg/100);
+  const today=new Date();
+  parDailyOcc={};
+  for(let d=0;d<14;d++){
+    const dd=new Date(today);dd.setDate(today.getDate()+d);
+    parDailyOcc[dd.toISOString().split('T')[0]]=rooms;
+  }
+}
+
+function setAllDaily(rooms){
+  Object.keys(parDailyOcc).forEach(k=>{parDailyOcc[k]=rooms;});
+  renderPAR();
+}
+
+// ══════════════════════════════════════════════════════════
+//  USERS (ADMIN + GM)
+// ══════════════════════════════════════════════════════════
+function renderUsers(){
+  const isAdmin=currentUser.role==='admin';
+  const isGM=currentUser.role==='gm';
+  // Admin sees all users; GM sees users in their hotel
+  let visUsers=isAdmin?DB.users:DB.users.filter(u=>u.hotelId===currentHotelId&&u.role==='manager');
+
+  const searchEl=document.getElementById('usr-search');
+  const search=searchEl?searchEl.value.toLowerCase():'';
+  if(search) visUsers=visUsers.filter(u=>u.name.toLowerCase().includes(search)||u.email.toLowerCase().includes(search));
+
+  let html=`<div class="toolbar">
+    <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="usr-search" placeholder="Search accounts..." value="${search}" oninput="renderUsers()"></div>
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Hotel</th><th>Phone</th><th>Created</th><th>Status</th><th></th></tr></thead>
+    <tbody>`;
+
+  visUsers.forEach(u=>{
+    const isMe=u.id===currentUser.id;
+    html+=`<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="u-avatar" style="background:${u.role==='admin'?'#d4a843':u.role==='gm'?'var(--purple-l)':'var(--blue-l)'};color:${u.role==='admin'?'#1c1a16':u.role==='gm'?'var(--purple)':'var(--blue)'}">${u.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+        <strong>${u.name}${isMe?' (You)':''}</strong>
+      </div></td>
+      <td style="font-size:12px">${u.email}</td>
+      <td><span class="badge badge-${u.role}">${u.role==='admin'?'Super Admin':u.role==='gm'?'General Manager':'Inv. Manager'}</span></td>
+      <td style="font-size:12px">${u.hotelId?hname(u.hotelId):'All Hotels'}</td>
+      <td style="font-size:12px">${u.phone||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${u.created}</td>
+      <td><span class="badge badge-${u.active?'active':'inactive'}">${u.active?'Active':'Inactive'}</span></td>
+      <td><div class="row-actions">
+        ${!isMe?`<button class="btn btn-xs ${u.active?'btn-danger':'btn-secondary'}" onclick="toggleUserActive(${u.id})">${u.active?'Deactivate':'Activate'}</button>`:''}
+        <button class="btn-icon" onclick="openUserModal(${u.id})">✏️</button>
+      </div></td>
+    </tr>`;
+  });
+  if(!visUsers.length) html+=`<tr><td colspan="8" class="empty-state"><div class="empty-icon">👥</div>No accounts found</td></tr>`;
+  html+=`</tbody></table></div></div>`;
+
+  // Permissions reference card
+  html+=`<div class="card" style="margin-top:16px;">
+    <div class="card-header"><span class="card-title">Role Permissions Reference</span></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        ${rolePermCard('👑','Super Admin','admin','View all hotels','Manage all inventory','All purchase orders','Create any account','Add/edit hotels','System settings')}
+        ${rolePermCard('🏨','General Manager','gm','View their hotel','Manage inventory','Approve orders','Create Inv. Manager accounts','View reports','')}
+        ${rolePermCard('📦','Inventory Manager','manager','View their hotel','Add/edit items','Place orders','View vendors','View reports','')}
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function rolePermCard(icon,title,role,p1,p2,p3,p4,p5,p6){
+  const colors={admin:'#d4a843',gm:'var(--purple)',manager:'var(--blue)'};
+  return `<div class="role-card" style="background:var(--surface2);flex-direction:column;align-items:flex-start;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="role-icon" style="background:${role==='admin'?'#1c1a16':role==='gm'?'var(--purple-l)':'var(--blue-l)'};">${icon}</div>
+      <strong>${title}</strong>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      ${[p1,p2,p3,p4,p5,p6].filter(Boolean).map(p=>`<span class="perm-tag perm-yes">✓ ${p}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+function openUserModal(id){
+  editingUserId=id||null;
+  const u=id?DB.users.find(x=>x.id===id):null;
+  document.getElementById('m-user-title').textContent=id?'Edit Account':'Create Account';
+  document.getElementById('u-name').value=u?u.name:'';
+  document.getElementById('u-email').value=u?u.email:'';
+  document.getElementById('u-phone').value=u?u.phone:'';
+  document.getElementById('u-pass').value='';
+  document.getElementById('u-pass2').value='';
+  // Role options
+  const roleEl=document.getElementById('u-role');
+  const adminOpt=document.getElementById('u-role-admin-opt');
+  if(currentUser.role==='admin'){adminOpt.style.display='';} else {adminOpt.style.display='none';}
+  roleEl.value=u?u.role:(currentUser.role==='gm'?'manager':'gm');
+  // Hotel selector
+  const hsel=document.getElementById('u-hotel');
+  hsel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+  if(u&&u.hotelId) hsel.value=u.hotelId;
+  else if(currentUser.hotelId) hsel.value=currentUser.hotelId;
+  updateUserFormRole();
+  openM('m-user');
+}
+
+function updateUserFormRole(){
+  const role=document.getElementById('u-role').value;
+  const hw=document.getElementById('u-hotel-wrap');
+  hw.style.display=role==='admin'?'none':'flex';
+  const permsEl=document.getElementById('u-role-perms');
+  const perms={
+    admin:['View & manage all 20 hotels','Create GM and Inventory Manager accounts','Full system access'],
+    gm:['Manage their assigned hotel only','Create Inventory Manager accounts for their hotel','Approve and track orders'],
+    manager:['Add/edit inventory items','Place purchase orders','View vendors and reports'],
+  };
+  permsEl.innerHTML=`<div style="background:var(--surface2);border-radius:var(--r);padding:10px 12px;font-size:12px;"><strong style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3)">This role can:</strong><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;">${(perms[role]||[]).map(p=>`<span class="perm-tag perm-yes">✓ ${p}</span>`).join('')}</div></div>`;
+}
+
+function checkPwStrength(){
+  const pw=document.getElementById('u-pass').value;
+  const el=document.getElementById('pw-str');
+  if(!pw){el.style.background='transparent';return;}
+  const strength=pw.length>=10&&/[A-Z]/.test(pw)&&/[0-9]/.test(pw)&&/[^A-Za-z0-9]/.test(pw)?3:pw.length>=6?2:1;
+  const cols=['var(--red)','var(--orange)','var(--green)'];
+  el.style.background=cols[strength-1];el.style.width=['33%','66%','100%'][strength-1];
+}
+
+function saveUser(){
+  const name=v('u-name').trim();
+  const email=v('u-email').trim().toLowerCase();
+  const pass=v('u-pass');
+  const pass2=v('u-pass2');
+  const role=v('u-role');
+  const hotelId=role==='admin'?null:parseInt(v('u-hotel'))||null;
+
+  // Validation
+  if(!name){showToast('Full name is required','error');return;}
+  if(!email){showToast('Email address is required','error');return;}
+  if(!email.includes('@')){showToast('Enter a valid email address','error');return;}
+  if(!editingUserId&&!pass){showToast('Password is required','error');return;}
+  if(pass&&pass!==pass2){showToast('Passwords do not match','error');return;}
+  if(pass&&pass.length<6){showToast('Password must be at least 6 characters','error');return;}
+  if(!editingUserId&&role!=='admin'&&!hotelId){showToast('Please select a hotel for this user','error');return;}
+
+  // Check duplicate email
+  const dupCheck=DB.users.find(u=>u.email.toLowerCase()===email&&u.id!==editingUserId);
+  if(dupCheck){showToast('This email is already in use by another account','error');return;}
+
+  if(editingUserId){
+    const u=DB.users.find(x=>x.id===editingUserId);
+    if(!u){showToast('User not found','error');return;}
+    u.name=name;u.email=email;u.role=role;
+    u.hotelId=role==='admin'?null:hotelId;
+    u.phone=v('u-phone');
+    if(pass) u.password=pass;
+    showToast(`Account updated for ${name}!`,'success');
+  } else {
+    // Make sure ID is unique
+    const maxId=DB.users.length?Math.max(...DB.users.map(u=>Number(u.id)||0)):0;
+    const newId=maxId+1;
+    DB.users.push({
+      id:newId,
+      name,email,
+      password:pass,
+      role,
+      hotelId:role==='admin'?null:hotelId,
+      phone:v('u-phone')||'',
+      active:true,
+      created:todayStr()
+    });
+    nextIds.user=newId+1;
+    showToast(`Account created for ${name}!`,'success');
+  }
+  closeM('m-user');
+  renderUsers();
+  gsAutoSync(); // Save to Google Sheets immediately
+}
+
+function toggleUserActive(id){
+  const u=DB.users.find(x=>x.id===id);
+  if(!u) return;
+  u.active=!u.active;
+  renderUsers();
+  gsAutoSync();
+  showToast(`${u.name} ${u.active?'activated':'deactivated'}`,'success');
+}
+
+// ══════════════════════════════════════════════════════════
+//  SETTINGS (ADMIN)
+// ══════════════════════════════════════════════════════════
+function renderSettings(){
+  let html=`<div class="two-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">System Overview</span></div>
+      <div class="card-body">
+        <div class="info-row"><span class="info-label">Total Properties</span><strong>${DB.hotels.length}</strong></div>
+        <div class="info-row"><span class="info-label">Total User Accounts</span><strong>${DB.users.length}</strong></div>
+        <div class="info-row"><span class="info-label">Total Inventory Items</span><strong>${DB.inventory.length}</strong></div>
+        <div class="info-row"><span class="info-label">Total Orders</span><strong>${DB.orders.length}</strong></div>
+        <div class="info-row"><span class="info-label">Total Vendors</span><strong>${DB.vendors.length}</strong></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Google Sheets Integration</span><span id="gs-status-badge" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:var(--surface2);color:var(--text3);">Not Connected</span></div>
+      <div class="card-body">
+        <div id="gs-connected-banner" style="display:none;background:var(--green-l);border:1px solid #8fd4a8;border-radius:var(--r);padding:11px 14px;font-size:13px;margin-bottom:14px;color:var(--green);">
+          ✅ <strong>Connected to Google Sheets!</strong> All data syncs automatically to your Drive.
+        </div>
+        <div id="gs-form-area">
+          <div style="background:var(--gold-l);border:1px solid #e8d280;border-radius:var(--r);padding:12px 14px;font-size:13px;margin-bottom:14px;">
+            <strong>📊 Paste your Web App URL below to connect</strong><br>
+            <span style="color:var(--text2);font-size:12px;">All your data will sync to your Google Drive spreadsheet automatically.</span>
+          </div>
+          <div class="fg" style="margin-bottom:10px;">
+            <label>Apps Script Web App URL</label>
+            <input type="text" id="gs-url" placeholder="https://script.google.com/macros/s/..." style="font-size:12px;" value="${GS_URL}">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary btn-sm" onclick="connectSheets()">Connect & Sync</button>
+            <span id="gs-connecting" style="display:none;font-size:12px;color:var(--text3);">Connecting...</span>
+          </div>
+          <div id="gs-error" style="display:none;margin-top:8px;font-size:12px;color:var(--red);"></div>
+        </div>
+        <div id="gs-actions" style="display:none;flex-direction:column;gap:8px;">
+          <div style="background:var(--green-l);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--green);line-height:1.7;">
+            ✅ <strong>Auto-sync is ON — Live updates every 30 seconds</strong><br>
+            <span style="color:var(--green);opacity:0.85;">Every change saves automatically. Screen refreshes live when your manager makes changes — no reload needed.</span>
+          </div>
+          <div id="gs-sync-log" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
+          <div style="margin-top:4px;">
+            <button class="btn btn-danger btn-sm" onclick="disconnectSheets()">Disconnect Google Sheets</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="card-header"><span class="card-title">Admin Account Settings</span></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="fg"><label>Your Name</label><input type="text" id="set-name" value="${currentUser.name}"></div>
+        <div class="fg"><label>Email</label><input type="email" id="set-email" value="${currentUser.email}"></div>
+        <div class="fg"><label>New Password</label><input type="password" id="set-pass" placeholder="Leave blank to keep current"></div>
+        <div class="fg"><label>Confirm Password</label><input type="password" id="set-pass2" placeholder="Repeat new password"></div>
+      </div>
+      <div style="margin-top:12px;"><button class="btn btn-primary" onclick="saveAdminProfile()">Save Changes</button></div>
+    </div>
+  </div>`;
+  document.getElementById('main-content').innerHTML=html;
+  // Apply connected state after render
+  setTimeout(()=>updateGSStatus(GS_CONNECTED), 50);
+}
+
+function saveAdminProfile(){
+  const name=document.getElementById('set-name').value.trim();
+  const email=document.getElementById('set-email').value.trim();
+  const pass=document.getElementById('set-pass').value;
+  const pass2=document.getElementById('set-pass2').value;
+  if(!name||!email){showToast('Name and email required','error');return;}
+  if(pass&&pass!==pass2){showToast('Passwords do not match','error');return;}
+  currentUser.name=name;currentUser.email=email;
+  if(pass) currentUser.password=pass;
+  document.getElementById('sb-username').textContent=name;
+  document.getElementById('sb-avatar').textContent=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  showToast('Profile updated!','success');
+}
+
+// ══════════════════════════════════════════════════════════
+//  STOCK OVERVIEW — per hotel, card view + value summary
+// ══════════════════════════════════════════════════════════
+let stockViewMode='cards'; // 'cards' or 'table'
+let stockFilterCat='';
+let stockFilterStatus='';
+
+function renderStockOverview(){
+  const inv=hotelInventory();
+  const hotel=DB.hotels.find(h=>h.id===currentHotelId);
+  const cur=hotel?hotel.currency:'$';
+
+  // Summary values
+  const totalVal=inv.reduce((s,i)=>s+i.current*i.cost,0);
+  const critCount=inv.filter(i=>stockStatus(i)==='critical').length;
+  const lowCount=inv.filter(i=>stockStatus(i)==='low').length;
+  const okCount=inv.filter(i=>stockStatus(i)==='ok').length;
+  const totalUnits=inv.reduce((s,i)=>s+i.current,0);
+  const cats=[...new Set(inv.map(i=>i.category))];
+
+  let html=`
+  <div class="print-header">
+    <h1>Stock Report — ${hotel?hotel.name:'Hotel'}</h1>
+    <p>Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} &nbsp;|&nbsp; Total Items: ${inv.length} &nbsp;|&nbsp; Total Value: ${cur}${totalVal.toFixed(2)}</p>
+  </div>
+
+  <!-- VALUE STRIP -->
+  <div class="value-strip">
+    <div class="vs-card">
+      <div class="vs-label">Total Stock Value</div>
+      <div class="vs-value" style="color:var(--gold-d)">${cur}${totalVal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="vs-sub">current inventory worth</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Total Items Tracked</div>
+      <div class="vs-value">${inv.length}</div>
+      <div class="vs-sub">across ${cats.length} categories</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Critical Stock</div>
+      <div class="vs-value" style="color:var(--red)">${critCount}</div>
+      <div class="vs-sub">need immediate order</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Low Stock</div>
+      <div class="vs-value" style="color:var(--orange)">${lowCount}</div>
+      <div class="vs-sub">order within 3 days</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Healthy Stock</div>
+      <div class="vs-value" style="color:var(--green)">${okCount}</div>
+      <div class="vs-sub">at good levels</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar" style="margin-bottom:16px;">
+    <div class="search-wrap" style="max-width:260px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="so-search" placeholder="Search items..." oninput="renderStockOverview()">
+    </div>
+    <select class="filter-sel" id="so-cat" onchange="renderStockOverview()">
+      <option value="">All Categories</option>
+      ${cats.map(c=>`<option value="${c}" ${c===stockFilterCat?'selected':''}>${c}</option>`).join('')}
+    </select>
+    <select class="filter-sel" id="so-status" onchange="renderStockOverview()">
+      <option value="">All Status</option>
+      <option value="critical">🔴 Critical</option>
+      <option value="low">🟠 Low</option>
+      <option value="ok">🟢 OK</option>
+    </select>
+    <div style="margin-left:auto;">
+      <div class="view-toggle">
+        <button class="vt-btn ${stockViewMode==='cards'?'active':''}" onclick="stockViewMode='cards';renderStockOverview()">⊞ Cards</button>
+        <button class="vt-btn ${stockViewMode==='table'?'active':''}" onclick="stockViewMode='table';renderStockOverview()">☰ Table</button>
+      </div>
+    </div>
+  </div>`;
+
+  // Apply filters
+  const search=(document.getElementById('so-search')?.value||'').toLowerCase();
+  const catF=document.getElementById('so-cat')?.value||'';
+  const stF=document.getElementById('so-status')?.value||'';
+  const filtered=inv.filter(i=>{
+    const ms=!search||i.name.toLowerCase().includes(search)||i.category.toLowerCase().includes(search)||i.location.toLowerCase().includes(search);
+    const mc=!catF||i.category===catF;
+    const mst=!stF||stockStatus(i)===stF;
+    return ms&&mc&&mst;
+  });
+
+  if(!filtered.length){
+    html+=`<div class="empty-state"><div class="empty-icon">📦</div>No items match your filters</div>`;
+    document.getElementById('main-content').innerHTML=html;
+    return;
+  }
+
+  if(stockViewMode==='cards'){
+    // Group by category
+    const grouped={};
+    filtered.forEach(i=>{grouped[i.category]=grouped[i.category]||[];grouped[i.category].push(i);});
+    Object.entries(grouped).forEach(([cat,items])=>{
+      const catVal=items.reduce((s,i)=>s+i.current*i.cost,0);
+      html+=`<div class="cat-section">
+        <div class="cat-section-title">
+          ${cat}
+          <span class="cat-count">${items.length} items</span>
+          <span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--text2)">Value: ${cur}${catVal.toFixed(2)}</span>
+        </div>
+        <div class="stock-card-grid">`;
+      items.sort((a,b)=>(a.current/a.min)-(b.current/b.min)).forEach(item=>{
+        const st=stockStatus(item);
+        const pct=Math.min(100,Math.round(item.current/item.max*100));
+        const fillCol=st==='critical'?'var(--red)':st==='low'?'var(--orange)':'var(--green)';
+        const itemVal=item.current*item.cost;
+        const stLabel=st==='critical'?'🔴 CRITICAL':st==='low'?'🟠 LOW':'🟢 OK';
+        html+=`<div class="stock-item-card ${st}">
+          <div class="sic-cat">${item.category}</div>
+          <div class="sic-name">${item.name}</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div class="sic-qty" style="color:${st==='critical'?'var(--red)':st==='low'?'var(--orange)':'var(--text)'}">${item.current}</div>
+            <span class="sic-unit">${item.unit}</span>
+            <span style="margin-left:auto;font-size:11px;background:${st==='critical'?'var(--red-l)':st==='low'?'var(--orange-l)':'var(--green-l)'};color:${st==='critical'?'var(--red)':st==='low'?'var(--orange)':'var(--green)'};padding:2px 7px;border-radius:10px;font-weight:600;">${stLabel}</span>
+          </div>
+          <div class="sic-bar">
+            <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+              <div style="width:${pct}%;height:100%;background:${fillCol};border-radius:3px;"></div>
+            </div>
+          </div>
+          <div class="sic-meta">
+            <span>Min: ${item.min}</span>
+            <span>Max: ${item.max}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+            <div class="sic-value">Value: ${cur}${itemVal.toFixed(2)}</div>
+            ${item.location?`<span style="font-size:10px;color:var(--text3)">📍${item.location}</span>`:''}
+          </div>
+          <div style="margin-top:8px;display:flex;gap:5px;">
+            <button class="btn btn-xs btn-secondary" style="flex:1" onclick="openAdjust(${item.id})">Adjust</button>
+            <button class="btn btn-xs btn-primary" style="flex:1" onclick="openOrderModal(${item.id})">Order</button>
+          </div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    });
+  } else {
+    // Table view
+    html+=`<div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Item Name</th><th>Category</th><th>COA Code</th><th>Location</th><th>In Stock</th><th>Min</th><th>Max</th><th>Unit</th><th>Unit Cost</th><th>Stock Value</th><th>Vendor</th><th>Status</th><th>Last Updated</th><th></th></tr></thead>
+      <tbody>`;
+    const sorted=[...filtered].sort((a,b)=>(a.current/a.min)-(b.current/b.min));
+    sorted.forEach(item=>{
+      const st=stockStatus(item);
+      const pct=Math.min(100,Math.round(item.current/item.max*100));
+      const itemVal=item.current*item.cost;
+      const coa=getCoa(item.coaId);
+      html+=`<tr>
+        <td><strong>${item.name}</strong>${item.notes?`<div style="font-size:10px;color:var(--text3)">${item.notes}</div>`:''}</td>
+        <td><span class="cat-pill">${item.category}</span></td>
+        <td>${coa?`<span style="font-family:monospace;font-size:11px;font-weight:700;background:var(--purple-l);color:var(--purple);padding:2px 6px;border-radius:4px;">${coa.code}</span>`:'<span style="color:var(--text3);font-size:10px;">—</span>'}</td>
+        <td style="font-size:11px;color:var(--text3)">${item.location||'—'}</td>
+        <td>
+          <div class="stock-bar-wrap">
+            <div class="stock-bar"><div class="stock-fill fill-${st}" style="width:${pct}%"></div></div>
+            <strong style="min-width:28px;color:${st==='critical'?'var(--red)':st==='low'?'var(--orange)':'var(--text)'}">${item.current}</strong>
+          </div>
+        </td>
+        <td style="color:var(--text3)">${item.min}</td>
+        <td style="color:var(--text3)">${item.max}</td>
+        <td style="color:var(--text3)">${item.unit}</td>
+        <td>${cur}${item.cost.toFixed(2)}</td>
+        <td><strong>${cur}${itemVal.toFixed(2)}</strong></td>
+        <td style="font-size:11px">${vname(item.vendorId)}</td>
+        <td><span class="badge badge-${st}">${st.toUpperCase()}</span></td>
+        <td style="font-size:11px;color:var(--text3)">${item.updated}</td>
+        <td><div class="row-actions">
+          <button class="btn-icon" onclick="openAdjust(${item.id})">📦</button>
+          <button class="btn btn-xs btn-primary" onclick="openOrderModal(${item.id})">Order</button>
+        </div></td>
+      </tr>`;
+    });
+    const totalFiltered=filtered.reduce((s,i)=>s+i.current*i.cost,0);
+    html+=`<tr style="background:var(--surface2);">
+      <td colspan="9" style="font-weight:600;font-size:13px;">TOTAL STOCK VALUE (filtered)</td>
+      <td colspan="5" style="font-weight:700;font-size:14px;color:var(--gold-d)">${cur}${totalFiltered.toFixed(2)}</td>
+    </tr>`;
+    html+=`</tbody></table></div></div>`;
+  }
+
+  document.getElementById('main-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  ALL HOTELS STOCK — admin combined view
+// ══════════════════════════════════════════════════════════
+function renderAllStock(){
+  const grandTotal=DB.inventory.reduce((s,i)=>s+i.current*i.cost,0);
+  const grandCritical=DB.inventory.filter(i=>stockStatus(i)==='critical').length;
+  const grandLow=DB.inventory.filter(i=>stockStatus(i)==='low').length;
+  const grandOk=DB.inventory.filter(i=>stockStatus(i)==='ok').length;
+
+  let html=`
+  <div class="print-header">
+    <h1>All Hotels — Combined Stock Report</h1>
+    <p>Generated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} &nbsp;|&nbsp; Total Properties: ${DB.hotels.length}</p>
+  </div>
+
+  <!-- GRAND TOTALS -->
+  <div class="value-strip">
+    <div class="vs-card">
+      <div class="vs-label">Total Stock Value</div>
+      <div class="vs-value" style="color:var(--gold-d)">$${grandTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="vs-sub">across all ${DB.hotels.length} hotels</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Total SKUs</div>
+      <div class="vs-value">${DB.inventory.length}</div>
+      <div class="vs-sub">unique items tracked</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Critical Alerts</div>
+      <div class="vs-value" style="color:var(--red)">${grandCritical}</div>
+      <div class="vs-sub">across all properties</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Low Stock</div>
+      <div class="vs-value" style="color:var(--orange)">${grandLow}</div>
+      <div class="vs-sub">need attention soon</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-label">Stock Health</div>
+      <div class="vs-value" style="color:var(--green)">${DB.inventory.length?Math.round(grandOk/DB.inventory.length*100):0}%</div>
+      <div class="vs-sub">items at good levels</div>
+    </div>
+  </div>
+
+  <!-- PER-HOTEL COMPARISON -->
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-header"><span class="card-title">Hotel-by-Hotel Stock Comparison</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Property</th><th>Location</th><th>Items Tracked</th><th>Critical</th><th>Low</th><th>Healthy</th><th>Stock Health</th><th>Total Value</th><th>Open Orders</th><th></th></tr></thead>
+      <tbody>`;
+
+  DB.hotels.forEach(h=>{
+    const hInv=DB.inventory.filter(i=>i.hotelId===h.id);
+    const hCrit=hInv.filter(i=>stockStatus(i)==='critical').length;
+    const hLow=hInv.filter(i=>stockStatus(i)==='low').length;
+    const hOk=hInv.filter(i=>stockStatus(i)==='ok').length;
+    const hVal=hInv.reduce((s,i)=>s+i.current*i.cost,0);
+    const hOrds=DB.orders.filter(o=>o.hotelId===h.id&&o.status==='pending').length;
+    const health=hInv.length?Math.round(hOk/hInv.length*100):0;
+    const healthCol=health>=80?'var(--green)':health>=50?'var(--orange)':'var(--red)';
+    html+=`<tr>
+      <td><strong>${h.name}</strong><div style="font-size:11px;color:var(--text3)">${h.stars} · ${h.rooms} rooms</div></td>
+      <td style="font-size:12px">${h.city}, ${h.country}</td>
+      <td>${hInv.length}</td>
+      <td>${hCrit?`<strong style="color:var(--red)">${hCrit}</strong>`:'—'}</td>
+      <td>${hLow?`<strong style="color:var(--orange)">${hLow}</strong>`:'—'}</td>
+      <td style="color:var(--green)">${hOk}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+            <div style="width:${health}%;height:100%;background:${healthCol};border-radius:3px;"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:${healthCol}">${health}%</span>
+        </div>
+      </td>
+      <td><strong>${h.currency}${hVal.toFixed(2)}</strong></td>
+      <td>${hOrds?`<span class="badge badge-pending">${hOrds} pending</span>`:'—'}</td>
+      <td><button class="btn btn-xs btn-primary" onclick="switchAndView(${h.id})">View</button></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+
+  // Drill-down: all items across all hotels with hotel label
+  html+=`<div class="card">
+    <div class="card-header">
+      <span class="card-title">All Items — Every Hotel</span>
+      <div class="toolbar" style="margin:0;gap:8px;">
+        <select class="filter-sel" id="as-hotel" onchange="renderAllStock()" style="font-size:12px;">
+          <option value="">All Hotels</option>
+          ${DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('')}
+        </select>
+        <select class="filter-sel" id="as-status" onchange="renderAllStock()" style="font-size:12px;">
+          <option value="">All Status</option>
+          <option value="critical">🔴 Critical Only</option>
+          <option value="low">🟠 Low Only</option>
+          <option value="ok">🟢 OK Only</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Hotel</th><th>Category</th><th>In Stock</th><th>Min</th><th>Stock Value</th><th>Status</th><th></th></tr></thead>
+      <tbody>`;
+
+  const hotelFilter=parseInt(document.getElementById('as-hotel')?.value)||0;
+  const stFilter=document.getElementById('as-status')?.value||'';
+  const allItems=DB.inventory.filter(i=>{
+    const mh=!hotelFilter||i.hotelId===hotelFilter;
+    const ms=!stFilter||stockStatus(i)===stFilter;
+    return mh&&ms;
+  }).sort((a,b)=>(a.current/a.min)-(b.current/b.min));
+
+  allItems.forEach(item=>{
+    const st=stockStatus(item);
+    const hotel=DB.hotels.find(h=>h.id===item.hotelId);
+    const cur=hotel?hotel.currency:'$';
+    const itemVal=item.current*item.cost;
+    html+=`<tr>
+      <td><strong>${item.name}</strong></td>
+      <td><span style="font-size:11px;background:var(--gold-l);color:var(--gold-d);padding:2px 7px;border-radius:10px;font-weight:500;">${hotel?hotel.name:'—'}</span></td>
+      <td><span class="cat-pill">${item.category}</span></td>
+      <td style="color:${st==='critical'?'var(--red)':st==='low'?'var(--orange)':'var(--text)'};font-weight:${st!=='ok'?'700':'400'}">${item.current} ${item.unit}</td>
+      <td style="color:var(--text3)">${item.min} ${item.unit}</td>
+      <td><strong>${cur}${itemVal.toFixed(2)}</strong></td>
+      <td><span class="badge badge-${st}">${st.toUpperCase()}</span></td>
+      <td><button class="btn btn-xs btn-secondary" onclick="switchAndView(${item.hotelId})">Go to Hotel</button></td>
+    </tr>`;
+  });
+  if(!allItems.length) html+=`<tr><td colspan="8" class="empty-state">No items match filters</td></tr>`;
+
+  // Grand total row
+  const filteredVal=allItems.reduce((s,i)=>s+i.current*i.cost,0);
+  html+=`<tr style="background:var(--surface2)">
+    <td colspan="5" style="font-weight:600">TOTAL (filtered view)</td>
+    <td colspan="3" style="font-weight:700;color:var(--gold-d);font-size:14px;">$${filteredVal.toFixed(2)}</td>
+  </tr>`;
+  html+=`</tbody></table></div></div>`;
+
+  document.getElementById('main-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  PRINT
+// ══════════════════════════════════════════════════════════
+function printStockReport(){
+  const hotel=DB.hotels.find(h=>h.id===currentHotelId);
+  const originalTitle=document.title;
+  document.title=currentView==='allstock'?'All Hotels Stock Report':`Stock Report — ${hotel?hotel.name:'Hotel'}`;
+  window.print();
+  document.title=originalTitle;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GOOGLE SHEETS SYNC ENGINE — FULLY AUTOMATIC
+// ══════════════════════════════════════════════════════════
+const GS_URL_KEY = 'hotelstock_gs_url';
+const GS_HARDCODED = 'https://script.google.com/macros/s/AKfycbwivLVn23BjD8HsgN1d24P2knBW5kCXSs3mA-6kc_1VQCh-Ts9xXw4hyPMbTjCnHNQ/exec';
+let GS_URL = GS_HARDCODED; // always use hard-coded URL
+let GS_CONNECTED = true;   // always connected
+let GS_SYNC_PENDING = false;
+let GS_SYNC_TIMER = null;
+let GS_POLL_TIMER = null;
+let GS_LAST_SAVE_TIME = 0; // timestamp of last save — used to skip poll if we just saved
+
+// ── Auto-load data from Sheets on every startup ───────────
+async function gsStartup(){
+  if(!GS_URL) return;
+  GS_CONNECTED = true;
+  gsSetStatus('syncing','Loading your data from Google Sheets...');
+  await loadFromSheets(true);
+  // Start live polling every 30 seconds
+  gsStartPolling();
+}
+
+// ── Live polling — checks for changes every 30 seconds ────
+function gsStartPolling(){
+  clearInterval(GS_POLL_TIMER);
+  GS_POLL_TIMER = setInterval(async ()=>{
+    // Skip poll if we saved less than 5 seconds ago (we are the one who changed)
+    if(Date.now() - GS_LAST_SAVE_TIME < 5000) return;
+    await gsSilentPoll();
+  }, 30000); // every 30 seconds
+}
+
+// ── Silent background poll — loads new data without disrupting UI ──
+async function gsSilentPoll(){
+  if(!GS_CONNECTED || !GS_URL) return;
+  try {
+    const res  = await fetch(GS_URL + '?action=readAll&t=' + Date.now());
+    const json = await res.json();
+    if(!json.success) return;
+    const d = json.data;
+    let changed = false;
+
+    // Check if remote data is different before updating
+    if(d.hotels    && d.hotels.length    && JSON.stringify(d.hotels)    !== JSON.stringify(DB.hotels))    { DB.hotels    = d.hotels;    changed = true; }
+    if(d.users     && d.users.length     && JSON.stringify(d.users)     !== JSON.stringify(DB.users))     { DB.users     = d.users;     changed = true; }
+    if(d.vendors   && d.vendors.length   && JSON.stringify(d.vendors)   !== JSON.stringify(DB.vendors))   { DB.vendors   = d.vendors;   changed = true; }
+    if(d.coa       && d.coa.length       && JSON.stringify(d.coa)       !== JSON.stringify(DB.coa))       { DB.coa       = d.coa;       changed = true; }
+    if(d.inventory && d.inventory.length && JSON.stringify(d.inventory) !== JSON.stringify(DB.inventory)) { DB.inventory = d.inventory; changed = true; }
+    if(d.orders    && d.orders.length){
+      const parsed = d.orders.map(o=>{
+        if(typeof o.items==='string'){try{o.items=JSON.parse(o.items);}catch(e){o.items=[];}}
+        return o;
+      });
+      if(JSON.stringify(parsed) !== JSON.stringify(DB.orders)){ DB.orders = parsed; changed = true; }
+    }
+
+    if(changed){
+      // Refresh hotel selector
+      const sel = document.getElementById('sb-hotel-select');
+      if(sel) sel.innerHTML = DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+      if(sel && currentHotelId) sel.value = currentHotelId;
+      // Re-render current view silently
+      const renders = {
+        dashboard:renderDashboard, hotels:renderHotels, inventory:renderInventory,
+        stockoverview:renderStockOverview, allstock:renderAllStock, orders:renderOrders,
+        vendors:renderVendors, coa:renderCoa, par:renderPAR, alerts:renderAlerts,
+        reports:renderReports, accounting:renderAccounting, users:renderUsers
+      };
+      if(renders[currentView]) renders[currentView]();
+      updateAlertBadge();
+      // Show subtle "updated" flash
+      gsSetStatus('saved','Live update received ✓');
+    }
+  } catch(err){
+    // Silent fail — do not disturb user if poll fails
+    console.warn('GS poll failed:', err.message);
+  }
+}
+
+// ── Debounced auto-sync — fires 1.5s after last change ────
+function gsAutoSync(){
+  if(!GS_CONNECTED || !GS_URL) return;
+  clearTimeout(GS_SYNC_TIMER);
+  gsSetStatus('syncing','Saving to Google Sheets...');
+  GS_SYNC_TIMER = setTimeout(async ()=>{
+    GS_LAST_SAVE_TIME = Date.now();
+    await syncToSheets(true);
+  }, 1500);
+}
+
+// ── Status indicator helper ────────────────────────────────
+function gsSetStatus(state, msg){
+  // Update sidebar indicator
+  let ind = document.getElementById('gs-indicator');
+  if(!ind){
+    ind = document.createElement('div');
+    ind.id = 'gs-indicator';
+    ind.style.cssText = 'position:fixed;bottom:70px;left:0;width:240px;padding:6px 14px;font-size:11px;font-weight:500;z-index:200;transition:all 0.3s;display:flex;align-items:center;gap:6px;';
+    document.body.appendChild(ind);
+  }
+  const colors = {
+    syncing: {bg:'#1a4fa0',fg:'#fff',dot:'⟳'},
+    saved:   {bg:'#1a7a45',fg:'#fff',dot:'✓'},
+    error:   {bg:'#b83232',fg:'#fff',dot:'✕'},
+    offline: {bg:'#5c5449',fg:'#fff',dot:'○'},
+  };
+  const c = colors[state] || colors.offline;
+  ind.style.background = c.bg;
+  ind.style.color = c.fg;
+  ind.innerHTML = `<span style="font-size:13px">${c.dot}</span> ${msg}`;
+  ind.style.opacity = '1';
+  // Auto-hide after 3s for saved state
+  if(state === 'saved'){
+    setTimeout(()=>{ ind.style.opacity='0'; }, 3000);
+  }
+}
+
+function updateGSStatus(connected){
+  GS_CONNECTED = connected;
+  const badge   = document.getElementById('gs-status-badge');
+  const banner  = document.getElementById('gs-connected-banner');
+  const formArea= document.getElementById('gs-form-area');
+  const actions = document.getElementById('gs-actions');
+  if(!badge) return;
+  if(connected){
+    badge.textContent='✅ Connected — Auto-sync ON';
+    badge.style.background='var(--green-l)';badge.style.color='var(--green)';
+    if(banner)   banner.style.display='block';
+    if(formArea) formArea.style.display='none';
+    if(actions)  actions.style.display='flex';
+    gsSetStatus('saved','Connected to Google Sheets');
+  } else {
+    badge.textContent='Not Connected';
+    badge.style.background='var(--surface2)';badge.style.color='var(--text3)';
+    if(banner)   banner.style.display='none';
+    if(formArea) formArea.style.display='block';
+    if(actions)  actions.style.display='none';
+  }
+}
+
+async function gsRequest(action, sheet, payload){
+  if(!GS_URL) return null;
+  try {
+    const res = await fetch(GS_URL, {
+      method:'POST',
+      body: JSON.stringify({action, sheet, payload}),
+      headers:{'Content-Type':'text/plain'}
+    });
+    return await res.json();
+  } catch(err){ return {success:false, error:err.message}; }
+}
+
+async function connectSheets(){
+  const urlInput = document.getElementById('gs-url');
+  const url = urlInput ? urlInput.value.trim() : '';
+  const errEl = document.getElementById('gs-error');
+  const connEl = document.getElementById('gs-connecting');
+  if(!url || !url.includes('script.google.com')){
+    if(errEl){errEl.textContent='Please paste a valid Apps Script Web App URL.';errEl.style.display='block';}
+    return;
+  }
+  GS_URL = url;
+  if(connEl) connEl.style.display='inline';
+  if(errEl)  errEl.style.display='none';
+  gsSetStatus('syncing','Connecting...');
+  try {
+    const res  = await fetch(GS_URL+'?action=ping');
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error||'Connection failed');
+    localStorage.setItem(GS_URL_KEY, GS_URL);
+    GS_CONNECTED = true;
+    await gsRequest('init','',{});
+    updateGSStatus(true);
+    await syncToSheets(false);
+  } catch(err){
+    GS_URL='';
+    gsSetStatus('error','Connection failed');
+    if(errEl){errEl.textContent='Could not connect. Check your URL. Error: '+err.message;errEl.style.display='block';}
+  }
+  if(connEl) connEl.style.display='none';
+}
+
+// ── Full sync TO Sheets — called automatically ─────────────
+async function syncToSheets(silent){
+  if(!GS_CONNECTED||!GS_URL) return;
+  if(!silent) gsSetStatus('syncing','Saving to Google Sheets...');
+  const logEl = document.getElementById('gs-sync-log');
+  const sheetMap={
+    Hotels:    DB.hotels,
+    Users:     DB.users,
+    Inventory: DB.inventory,
+    Orders:    DB.orders.map(o=>({...o,items:JSON.stringify(o.items)})),
+    Vendors:   DB.vendors,
+    COA:       DB.coa,
+  };
+  let synced=0;
+  for(const [sheet,rows] of Object.entries(sheetMap)){
+    const r=await gsRequest('overwrite',sheet,rows);
+    if(r&&r.success) synced++;
+  }
+  const now=new Date().toLocaleTimeString();
+  gsSetStatus('saved',`Saved to Google Sheets — ${now}`);
+  if(logEl) logEl.textContent=`Last saved: ${now}`;
+  if(!silent && synced===6) showToast('All data saved to Google Sheets ✅','success');
+}
+
+// ── Load FROM Sheets — called automatically on startup ─────
+async function loadFromSheets(silent){
+  if(!GS_CONNECTED||!GS_URL) return;
+  if(!silent) gsSetStatus('syncing','Loading from Google Sheets...');
+  try {
+    const res  = await fetch(GS_URL+'?action=readAll');
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error);
+    const d=json.data;
+    if(d.hotels    &&d.hotels.length)    DB.hotels    =d.hotels;
+    if(d.users     &&d.users.length)     DB.users     =d.users;
+    if(d.vendors   &&d.vendors.length)   DB.vendors   =d.vendors;
+    if(d.coa       &&d.coa.length)       DB.coa       =d.coa;
+    if(d.inventory &&d.inventory.length) DB.inventory =d.inventory;
+    if(d.orders    &&d.orders.length){
+      DB.orders=d.orders.map(o=>{
+        if(typeof o.items==='string'){try{o.items=JSON.parse(o.items);}catch(e){o.items=[];}}
+        return o;
+      });
+    }
+    // Recalculate nextIds so new records don't clash with existing ones
+    nextIds.hotel    = DB.hotels.length    ? Math.max(...DB.hotels.map(x=>Number(x.id)||0))    + 1 : 1;
+    nextIds.user     = DB.users.length     ? Math.max(...DB.users.map(x=>Number(x.id)||0))     + 1 : 1;
+    nextIds.inventory= DB.inventory.length ? Math.max(...DB.inventory.map(x=>Number(x.id)||0)) + 1 : 1;
+    nextIds.vendor   = DB.vendors.length   ? Math.max(...DB.vendors.map(x=>Number(x.id)||0))   + 1 : 1;
+    nextIds.coa      = DB.coa.length       ? Math.max(...DB.coa.map(x=>Number(x.id)||0))       + 1 : 1;
+    // Refresh hotel selector
+    const sel=document.getElementById('sb-hotel-select');
+    if(sel) sel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+    const now=new Date().toLocaleTimeString();
+    gsSetStatus('saved',`Loaded from Google Sheets — ${now}`);
+    if(!silent){
+      showToast('Data loaded from Google Sheets ✅','success');
+      nav(currentView);
+    } else {
+      nav('dashboard');
+    }
+  } catch(err){
+    gsSetStatus('error','Load failed: '+err.message);
+    if(!silent) showToast('Load failed: '+err.message,'error');
+  }
+}
+
+function disconnectSheets(){
+  if(!confirm('Disconnect from Google Sheets? Your local data will not be affected.')) return;
+  GS_URL='';GS_CONNECTED=false;
+  localStorage.removeItem(GS_URL_KEY);
+  updateGSStatus(false);
+  const ind=document.getElementById('gs-indicator');
+  if(ind) ind.style.opacity='0';
+  showToast('Disconnected from Google Sheets','success');
+}
+
+function v(id){const el=document.getElementById(id);return el?el.value:'';}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function addActivity(text,color){DB.activities.unshift({hotelId:currentHotelId,text,time:'just now',color});}
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast '+(type==='success'?'toast-success':type==='error'?'toast-error':'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+</script>
+</body>
+</html>
