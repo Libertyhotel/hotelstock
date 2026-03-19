@@ -689,6 +689,9 @@ let nextIds = {hotel:4,user:6,inventory:13,vendor:5,order:5,coa:11};
 //  AUTH
 // ══════════════════════════════════════════════════════════
 function doLogin(){
+  // Ensure all passwords in DB are strings before comparing
+  DB.users.forEach(u=>{ u.password = String(u.password||''); });
+
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
   const errEl=document.getElementById('login-error');
@@ -2686,7 +2689,6 @@ async function gsSilentPoll(){
 
     // Check if remote data is different before updating
     if(d.hotels    && d.hotels.length    && JSON.stringify(d.hotels)    !== JSON.stringify(DB.hotels))    { DB.hotels    = d.hotels;    changed = true; }
-    if(d.users     && d.users.length     && JSON.stringify(d.users)     !== JSON.stringify(DB.users))     { DB.users     = d.users;     changed = true; }
     if(d.vendors   && d.vendors.length   && JSON.stringify(d.vendors)   !== JSON.stringify(DB.vendors))   { DB.vendors   = d.vendors;   changed = true; }
     if(d.coa       && d.coa.length       && JSON.stringify(d.coa)       !== JSON.stringify(DB.coa))       { DB.coa       = d.coa;       changed = true; }
     if(d.inventory && d.inventory.length && JSON.stringify(d.inventory) !== JSON.stringify(DB.inventory)) { DB.inventory = d.inventory; changed = true; }
@@ -2696,6 +2698,19 @@ async function gsSilentPoll(){
         return o;
       });
       if(JSON.stringify(parsed) !== JSON.stringify(DB.orders)){ DB.orders = parsed; changed = true; }
+    }
+    // Users — load but NEVER overwrite current logged-in user's password
+    if(d.users && d.users.length){
+      const protected_users = d.users.map(u=>{
+        u.password = String(u.password || '');
+        if(currentUser && String(u.id) === String(currentUser.id)){
+          u.password = String(currentUser.password);
+          u.name     = currentUser.name;
+          u.email    = currentUser.email;
+        }
+        return u;
+      });
+      if(JSON.stringify(protected_users) !== JSON.stringify(DB.users)){ DB.users = protected_users; changed = true; }
     }
 
     if(changed){
@@ -2858,7 +2873,6 @@ async function loadFromSheets(silent){
     if(!json.success) throw new Error(json.error);
     const d=json.data;
     if(d.hotels    &&d.hotels.length)    DB.hotels    =d.hotels;
-    if(d.users     &&d.users.length)     DB.users     =d.users;
     if(d.vendors   &&d.vendors.length)   DB.vendors   =d.vendors;
     if(d.coa       &&d.coa.length)       DB.coa       =d.coa;
     if(d.inventory &&d.inventory.length) DB.inventory =d.inventory;
@@ -2868,7 +2882,22 @@ async function loadFromSheets(silent){
         return o;
       });
     }
-    // Recalculate nextIds so new records don't clash with existing ones
+    // Load users BUT protect current logged-in user's password
+    // Google Sheets may have old password — never overwrite what is in memory
+    if(d.users && d.users.length){
+      DB.users = d.users.map(u => {
+        // Always convert password to string to avoid number comparison issues
+        u.password = String(u.password || '');
+        // If this is the currently logged-in user, keep their current password from memory
+        if(currentUser && String(u.id) === String(currentUser.id)){
+          u.password = String(currentUser.password);
+          u.name     = currentUser.name;
+          u.email    = currentUser.email;
+        }
+        return u;
+      });
+    }
+    // Recalculate nextIds
     nextIds.hotel    = DB.hotels.length    ? Math.max(...DB.hotels.map(x=>Number(x.id)||0))    + 1 : 1;
     nextIds.user     = DB.users.length     ? Math.max(...DB.users.map(x=>Number(x.id)||0))     + 1 : 1;
     nextIds.inventory= DB.inventory.length ? Math.max(...DB.inventory.map(x=>Number(x.id)||0)) + 1 : 1;
@@ -2877,6 +2906,7 @@ async function loadFromSheets(silent){
     // Refresh hotel selector
     const sel=document.getElementById('sb-hotel-select');
     if(sel) sel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+    if(sel && currentHotelId) sel.value=currentHotelId;
     const now=new Date().toLocaleTimeString();
     gsSetStatus('saved',`Loaded from Google Sheets — ${now}`);
     if(!silent){
