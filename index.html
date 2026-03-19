@@ -714,8 +714,6 @@ function doLogin(){
   nav('dashboard');
   // Auto-load from Google Sheets on login
   setTimeout(()=>gsStartup(), 500);
-  // Show reminder banner if count is overdue
-  setTimeout(()=>checkLoginReminder(), 1500);
 }
 
 function doLogout(){
@@ -768,7 +766,6 @@ function setupSidebar(){
   nav+=sbItem('vendors','🏢','Vendors');
   nav+=sbItem('coa','📒','Chart of Accounts');
   nav+=sbItem('par','🛏️','PAR & Occupancy');
-  nav+=sbItem('reminders','🔔','Reminders','sb-remind-badge');
   nav+=sbItem('alerts','🔔','Stock Alerts','sb-alert-badge');
   nav+=sbItem('reports','📈','Reports');
   nav+=sbItem('accounting','🧾','Accounting Report');
@@ -800,7 +797,6 @@ function updateAlertBadge(){
     if(alerts.length){pill.textContent=`⚠️ ${alerts.length} Alert${alerts.length>1?'s':''}`;pill.style.display='inline';}
     else{pill.style.display='none';}
   }
-  updateReminderBadge();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -811,7 +807,7 @@ function nav(viewId){
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
   const navEl=document.getElementById('nav-'+viewId);
   if(navEl) navEl.classList.add('active');
-  const titles={dashboard:'Dashboard',hotels:'All Properties',inventory:'Inventory',stockoverview:'Stock Overview',allstock:'All Hotels — Stock',orders:'Purchase Orders',vendors:'Vendors',coa:'Chart of Accounts',par:'PAR & Occupancy Planner',reminders:'Reminders & Alerts',alerts:'Stock Alerts',reports:'Reports & Analytics',accounting:'Accounting Report',users:'User Accounts',settings:'System Settings'};
+  const titles={dashboard:'Dashboard',hotels:'All Properties',inventory:'Inventory',stockoverview:'Stock Overview',allstock:'All Hotels — Stock',orders:'Purchase Orders',vendors:'Vendors',coa:'Chart of Accounts',par:'PAR & Occupancy Planner',alerts:'Stock Alerts',reports:'Reports & Analytics',accounting:'Accounting Report',users:'User Accounts',settings:'System Settings'};
   document.getElementById('page-title').textContent=titles[viewId]||viewId;
 
   const hotel=DB.hotels.find(h=>h.id===currentHotelId);
@@ -842,7 +838,7 @@ function nav(viewId){
 
   const content=document.getElementById('main-content');
   content.innerHTML='';
-  const renders={dashboard:renderDashboard,hotels:renderHotels,inventory:renderInventory,stockoverview:renderStockOverview,allstock:renderAllStock,orders:renderOrders,vendors:renderVendors,coa:renderCoa,par:renderPAR,reminders:renderReminders,alerts:renderAlerts,reports:renderReports,accounting:renderAccounting,users:renderUsers,settings:renderSettings};
+  const renders={dashboard:renderDashboard,hotels:renderHotels,inventory:renderInventory,stockoverview:renderStockOverview,allstock:renderAllStock,orders:renderOrders,vendors:renderVendors,coa:renderCoa,par:renderPAR,alerts:renderAlerts,reports:renderReports,accounting:renderAccounting,users:renderUsers,settings:renderSettings};
   if(renders[viewId]) renders[viewId]();
   updateAlertBadge();
 }
@@ -889,22 +885,6 @@ function renderDashboard(){
   let html=``;
   if(critical.length){
     html+=`<div class="alert-banner">⚠️ <span><strong>Action Required:</strong> ${critical.length} item${critical.length>1?'s are':' is'} critically low and need immediate ordering.</span><button class="btn btn-sm btn-danger" style="margin-left:auto;" onclick="nav('alerts')">View Alerts</button></div>`;
-  }
-
-  // Reminder status for this hotel
-  const remSt = currentHotelId ? getCountStatus(currentHotelId) : 'ok';
-  const remS  = currentHotelId ? getReminderSettings(currentHotelId) : REMINDER_DEFAULTS;
-  const remDays = daysSince(remS.lastCount);
-  if(remSt==='overdue'){
-    html+=`<div style="display:flex;align-items:center;gap:10px;background:var(--red-l);border:1px solid #f5c0bb;border-radius:var(--r);padding:11px 14px;margin-bottom:18px;font-size:13px;color:var(--red);">
-      🚨 <span><strong>Inventory Count Overdue:</strong> Last count was ${remS.lastCount?remDays+' days ago':'never done'}. Manager needs to update stock counts now.</span>
-      <button class="btn btn-sm btn-danger" style="margin-left:auto;" onclick="nav('reminders')">View Reminders</button>
-    </div>`;
-  } else if(remSt==='due'){
-    html+=`<div style="display:flex;align-items:center;gap:10px;background:var(--orange-l);border:1px solid #f5c8a0;border-radius:var(--r);padding:11px 14px;margin-bottom:18px;font-size:13px;color:var(--orange);">
-      ⏰ <span><strong>Inventory Count Due:</strong> It has been ${remDays} days since last count. Time to update stock levels.</span>
-      <button class="btn btn-sm" style="margin-left:auto;background:var(--orange);color:#fff;padding:5px 12px;border:none;border-radius:6px;cursor:pointer;font-size:12px;" onclick="nav('reminders')">View Reminders</button>
-    </div>`;
   }
 
   html+=`<div class="stats-grid">
@@ -1991,272 +1971,6 @@ function setAllDaily(rooms){
 }
 
 // ══════════════════════════════════════════════════════════
-//  REMINDERS & ALERTS SYSTEM
-// ══════════════════════════════════════════════════════════
-
-// Reminder settings stored per hotel
-// countFreq: how many days between inventory counts
-// lastCount: last time manager did a count (date string)
-const REMINDER_DEFAULTS = { countFreq: 3, lastCount: null }; // every 3 days
-
-function getReminderSettings(hotelId){
-  if(!hotelId) return {...REMINDER_DEFAULTS};
-  const key = 'hs_remind_' + hotelId;
-  try { return JSON.parse(localStorage.getItem(key)) || {...REMINDER_DEFAULTS}; }
-  catch(e){ return {...REMINDER_DEFAULTS}; }
-}
-
-function saveReminderSettings(hotelId, settings){
-  localStorage.setItem('hs_remind_' + hotelId, JSON.stringify(settings));
-}
-
-function markCountDone(hotelId){
-  const s = getReminderSettings(hotelId);
-  s.lastCount = new Date().toISOString();
-  saveReminderSettings(hotelId, s);
-  // Update all items' updated date
-  DB.inventory.filter(i=>i.hotelId===hotelId).forEach(i=>{ i.updated = todayStr(); });
-  gsAutoSync();
-  updateReminderBadge();
-  showToast('Inventory count marked complete ✅','success');
-}
-
-function daysSince(dateStr){
-  if(!dateStr) return 999;
-  const diff = Date.now() - new Date(dateStr).getTime();
-  return Math.floor(diff / (1000*60*60*24));
-}
-
-function getCountStatus(hotelId){
-  const s = getReminderSettings(hotelId);
-  const days = daysSince(s.lastCount);
-  const freq = s.countFreq || 3;
-  if(days >= freq + 2) return 'overdue';
-  if(days >= freq)     return 'due';
-  return 'ok';
-}
-
-function updateReminderBadge(){
-  try {
-    if(!DB || !DB.hotels || !currentUser) return;
-    let needCount = 0;
-    DB.hotels.forEach(h => {
-      try {
-        const st = getCountStatus(h.id);
-        if(st === 'due' || st === 'overdue') needCount++;
-      } catch(e){}
-    });
-    const alertItems = DB.inventory ? DB.inventory.filter(i=>{
-      try { return stockStatus(i)!=='ok'; } catch(e){ return false; }
-    }).length : 0;
-    const parItems = DB.inventory ? DB.inventory.filter(i=>{
-      try {
-        if(!i.parType||i.parType==='none'||!i.parQty) return false;
-        const h = DB.hotels.find(x=>x.id===i.hotelId);
-        const rooms = h ? Math.round(h.rooms * 0.75) : 0;
-        const needed = i.parType==='daily' ? rooms*i.parQty*7 : rooms*i.parQty/2;
-        return i.current < needed * 1.1;
-      } catch(e){ return false; }
-    }).length : 0;
-    const total = needCount + (alertItems > 0 ? 1 : 0) + (parItems > 0 ? 1 : 0);
-    const badge = document.getElementById('sb-remind-badge');
-    if(badge){
-      badge.textContent = total;
-      badge.style.display = total > 0 ? 'inline' : 'none';
-    }
-  } catch(e){ console.warn('updateReminderBadge error:', e); }
-}
-
-// Show login reminder banner for manager
-function checkLoginReminder(){
-  if(!currentUser || currentUser.role === 'admin') return;
-  const hotelId = currentHotelId;
-  const st = getCountStatus(hotelId);
-  const s = getReminderSettings(hotelId);
-  const days = daysSince(s.lastCount);
-
-  if(st === 'overdue' || st === 'due'){
-    const banner = document.createElement('div');
-    banner.id = 'login-reminder-banner';
-    banner.style.cssText = `position:fixed;top:54px;left:240px;right:0;z-index:90;
-      background:${st==='overdue'?'var(--red)':'var(--orange)'};color:#fff;
-      padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
-      font-size:13px;font-weight:500;`;
-    banner.innerHTML = `
-      <span>${st==='overdue'
-        ? `🚨 Inventory count is ${days} days overdue! Please do your stock count now.`
-        : `⏰ Time for your inventory count — it has been ${days} days since your last count.`
-      }</span>
-      <div style="display:flex;gap:8px;">
-        <button onclick="nav('inventory')" style="background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;">Go to Inventory</button>
-        <button onclick="markCountDone(${hotelId});document.getElementById('login-reminder-banner')?.remove()" style="background:#fff;border:none;color:${st==='overdue'?'var(--red)':'var(--orange)'};padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">Mark Done</button>
-        <button onclick="document.getElementById('login-reminder-banner')?.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:0 4px;">✕</button>
-      </div>`;
-    // Remove any existing banner first
-    document.getElementById('login-reminder-banner')?.remove();
-    document.body.appendChild(banner);
-  }
-}
-
-function renderReminders(){
-  const isAdmin = currentUser.role === 'admin';
-  const hotelsToCheck = isAdmin ? DB.hotels : DB.hotels.filter(h=>h.id===currentHotelId);
-  const cur = getCurrency();
-
-  let html = ``;
-
-  // ── INVENTORY COUNT STATUS ──────────────────────
-  html += `<div class="section-hd" style="margin-bottom:14px;">📋 Inventory Count Status</div>
-  <div class="card" style="margin-bottom:18px;">
-    <div class="card-header">
-      <span class="card-title">Count Schedule — Are Managers Keeping Up?</span>
-      ${isAdmin?'<span style="font-size:11px;color:var(--text3)">You can see all hotels</span>':''}
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Hotel</th><th>Count Frequency</th><th>Last Count</th><th>Days Since</th><th>Status</th><th></th></tr></thead>
-      <tbody>`;
-
-  hotelsToCheck.forEach(h=>{
-    const s = getReminderSettings(h.id);
-    const days = daysSince(s.lastCount);
-    const st = getCountStatus(h.id);
-    const stColor = st==='overdue'?'var(--red)':st==='due'?'var(--orange)':'var(--green)';
-    const stLabel = st==='overdue'?'🚨 OVERDUE':st==='due'?'⏰ DUE NOW':'✅ OK';
-    html+=`<tr>
-      <td><strong>${h.name}</strong><div style="font-size:11px;color:var(--text3)">${h.city}</div></td>
-      <td>
-        <select onchange="updateCountFreq(${h.id},this.value)" style="font-size:12px;width:auto;padding:4px 8px;">
-          <option value="1" ${s.countFreq===1?'selected':''}>Every day</option>
-          <option value="2" ${s.countFreq===2?'selected':''}>Every 2 days</option>
-          <option value="3" ${s.countFreq===3?'selected':''}>Every 3 days</option>
-          <option value="7" ${s.countFreq===7?'selected':''}>Weekly</option>
-          <option value="14" ${s.countFreq===14?'selected':''}>Fortnightly</option>
-        </select>
-      </td>
-      <td style="font-size:12px">${s.lastCount?new Date(s.lastCount).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Never'}</td>
-      <td style="font-weight:600;color:${stColor}">${s.lastCount?days+' days':'—'}</td>
-      <td><span style="font-size:11px;font-weight:600;color:${stColor}">${stLabel}</span></td>
-      <td>
-        <button class="btn btn-xs btn-primary" onclick="markCountDone(${h.id});renderReminders()">✓ Mark Count Done</button>
-      </td>
-    </tr>`;
-  });
-
-  html+=`</tbody></table></div></div>`;
-
-  // ── LOW STOCK ALERTS ────────────────────────────
-  const alertItems = isAdmin
-    ? DB.inventory.filter(i=>stockStatus(i)!=='ok').sort((a,b)=>(a.current/a.min)-(b.current/b.min))
-    : hotelInventory().filter(i=>stockStatus(i)!=='ok').sort((a,b)=>(a.current/a.min)-(b.current/b.min));
-
-  html+=`<div class="section-hd" style="margin-bottom:14px;">🚨 Order Alerts — Stock & PAR</div>
-  <div class="card" style="margin-bottom:18px;">
-    <div class="card-header">
-      <span class="card-title">Low Stock — Order Needed Now</span>
-      <span style="font-size:12px;color:var(--red);font-weight:600">${alertItems.length} item${alertItems.length!==1?'s':''} need attention</span>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Item</th>${isAdmin?'<th>Hotel</th>':''}<th>Status</th><th>In Stock</th><th>Min Level</th><th>Shortfall</th><th>Vendor</th><th></th></tr></thead>
-      <tbody>`;
-
-  if(alertItems.length){
-    alertItems.forEach(item=>{
-      const st=stockStatus(item);
-      const deficit=Math.max(0,item.min-item.current);
-      const h=DB.hotels.find(x=>x.id===item.hotelId);
-      html+=`<tr style="background:${st==='critical'?'#fff8f8':'#fffbf5'}">
-        <td><strong>${item.name}</strong><div style="font-size:10px;color:var(--text3)">${item.category}</div></td>
-        ${isAdmin?`<td style="font-size:11px"><span style="background:var(--gold-l);color:var(--gold-d);padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600">${h?h.name:'—'}</span></td>`:''}
-        <td><span class="badge badge-${st}">${st==='critical'?'🚨 CRITICAL':'⚠️ LOW'}</span></td>
-        <td style="font-weight:600;color:${st==='critical'?'var(--red)':'var(--orange)'}">${item.current} ${item.unit}</td>
-        <td>${item.min} ${item.unit}</td>
-        <td><strong style="color:var(--red)">-${deficit} ${item.unit}</strong></td>
-        <td style="font-size:11px">${vname(item.vendorId)}</td>
-        <td><button class="btn btn-xs btn-primary" onclick="currentHotelId=${item.hotelId};openOrderModal(${item.id})">Order Now</button></td>
-      </tr>`;
-    });
-  } else {
-    html+=`<tr><td colspan="${isAdmin?8:7}" class="empty-state" style="padding:20px">✅ All stock levels are healthy — no orders needed right now</td></tr>`;
-  }
-  html+=`</tbody></table></div></div>`;
-
-  // ── PAR-BASED ORDER ALERTS ──────────────────────
-  // For each hotel check if PAR needs are not covered
-  const parAlerts = [];
-  hotelsToCheck.forEach(h=>{
-    const hInv = DB.inventory.filter(i=>i.hotelId===h.id&&i.parType&&i.parType!=='none');
-    const rooms = Math.round(h.rooms * 0.75); // assume 75% occupancy
-    hInv.forEach(item=>{
-      const days7 = item.parType==='daily' ? rooms*item.parQty*7 : rooms*item.parQty/2;
-      const needed = Math.ceil(days7 * 1.1); // 10% buffer
-      if(item.current < needed){
-        parAlerts.push({item, h, needed, shortfall: needed - item.current});
-      }
-    });
-  });
-
-  html+=`<div class="card" style="margin-bottom:18px;">
-    <div class="card-header">
-      <span class="card-title">PAR-Based Order Alerts — Based on 75% Occupancy for 7 Days</span>
-      <span style="font-size:12px;color:var(--orange);font-weight:600">${parAlerts.length} item${parAlerts.length!==1?'s':''} below PAR requirement</span>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Item</th>${isAdmin?'<th>Hotel</th>':''}<th>PAR Type</th><th>PAR Needed (7d)</th><th>In Stock</th><th>Shortfall</th><th></th></tr></thead>
-      <tbody>`;
-
-  if(parAlerts.length){
-    parAlerts.forEach(({item,h,needed,shortfall})=>{
-      html+=`<tr style="background:#fffbf5">
-        <td><strong>${item.name}</strong></td>
-        ${isAdmin?`<td style="font-size:11px"><span style="background:var(--gold-l);color:var(--gold-d);padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600">${h.name}</span></td>`:''}
-        <td><span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:${item.parType==='daily'?'var(--blue-l)':'var(--green-l)'};color:${item.parType==='daily'?'var(--blue)':'var(--green)'}">${item.parType==='daily'?'Daily':'Per Stay'}</span></td>
-        <td style="font-weight:600">${needed} ${item.unit}</td>
-        <td style="color:var(--orange);font-weight:600">${item.current} ${item.unit}</td>
-        <td><strong style="color:var(--red)">-${shortfall} ${item.unit}</strong></td>
-        <td><button class="btn btn-xs btn-primary" onclick="currentHotelId=${item.hotelId};openOrderModal(${item.id})">Order Now</button></td>
-      </tr>`;
-    });
-  } else {
-    html+=`<tr><td colspan="${isAdmin?7:6}" class="empty-state" style="padding:20px">✅ All PAR levels are covered for the next 7 days</td></tr>`;
-  }
-  html+=`</tbody></table></div></div>`;
-
-  // ── ADMIN SUMMARY ───────────────────────────────
-  if(isAdmin){
-    html+=`<div class="card">
-      <div class="card-header"><span class="card-title">All Hotels — Quick Summary</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px;">`;
-    DB.hotels.forEach(h=>{
-      const st=getCountStatus(h.id);
-      const s=getReminderSettings(h.id);
-      const hAlerts=DB.inventory.filter(i=>i.hotelId===h.id&&stockStatus(i)!=='ok').length;
-      const stColor=st==='overdue'?'var(--red)':st==='due'?'var(--orange)':'var(--green)';
-      html+=`<div style="background:var(--surface2);border-radius:var(--r);padding:12px 14px;border-left:4px solid ${stColor}">
-        <div style="font-weight:600;font-size:13px;margin-bottom:6px">${h.name}</div>
-        <div style="font-size:11px;color:var(--text2);display:flex;flex-direction:column;gap:3px">
-          <span style="color:${stColor};font-weight:600">${st==='overdue'?'🚨 Count overdue':st==='due'?'⏰ Count due':'✅ Count up to date'}</span>
-          ${hAlerts?`<span style="color:var(--red)">⚠️ ${hAlerts} low stock alert${hAlerts>1?'s':''}</span>`:'<span style="color:var(--green)">✅ Stock levels OK</span>'}
-          <span>Last count: ${s.lastCount?daysSince(s.lastCount)+' days ago':'Never'}</span>
-        </div>
-        <button class="btn btn-xs btn-primary" style="margin-top:8px;width:100%" onclick="switchAndView(${h.id})">View Hotel</button>
-      </div>`;
-    });
-    html+=`</div></div>`;
-  }
-
-  document.getElementById('main-content').innerHTML=html;
-  updateReminderBadge();
-}
-
-function updateCountFreq(hotelId, freq){
-  const s = getReminderSettings(hotelId);
-  s.countFreq = parseInt(freq);
-  saveReminderSettings(hotelId, s);
-  updateReminderBadge();
-  showToast('Count frequency updated','success');
-}
-
-// ══════════════════════════════════════════════════════════
 //  USERS (ADMIN + GM)
 // ══════════════════════════════════════════════════════════
 function renderUsers(){
@@ -2451,7 +2165,13 @@ function saveUser(){
   if(hselEl) hselEl.disabled=false;
   closeM('m-user');
   renderUsers();
-  gsAutoSync();
+  // Force immediate Users sheet sync — passwords must save right away
+  if(GS_CONNECTED && GS_URL){
+    GS_LAST_SAVE_TIME = Date.now();
+    gsRequest('overwrite','Users', DB.users).then(()=>gsAutoSync());
+  } else {
+    gsAutoSync();
+  }
 }
 
 function toggleUserActive(id){
@@ -2542,9 +2262,9 @@ function saveAdminProfile(){
   // Update currentUser object
   currentUser.name=name;
   currentUser.email=email;
-  if(pass) currentUser.password=String(pass); // always store as string
+  if(pass) currentUser.password=String(pass);
 
-  // CRITICAL: also update DB.users so it gets saved to Google Sheets
+  // Update DB.users so it syncs to Google Sheets
   const userInDB=DB.users.find(u=>u.id===currentUser.id);
   if(userInDB){
     userInDB.name=name;
@@ -2560,9 +2280,24 @@ function saveAdminProfile(){
   document.getElementById('set-pass').value='';
   document.getElementById('set-pass2').value='';
 
-  // Save to Google Sheets immediately
-  gsAutoSync();
-  showToast('Profile updated and saved to Google Sheets ✅','success');
+  // Force immediate sync of Users sheet — do not use debounce
+  // This ensures password is saved right away before any poll can overwrite it
+  if(GS_CONNECTED && GS_URL){
+    GS_LAST_SAVE_TIME = Date.now(); // block polls for 15 seconds
+    gsSetStatus('syncing','Saving password to Google Sheets...');
+    gsRequest('overwrite','Users', DB.users).then(r=>{
+      if(r && r.success){
+        gsSetStatus('saved','Password saved to Google Sheets ✅');
+        showToast('Profile and password saved to Google Sheets ✅','success');
+      } else {
+        showToast('Saved locally. Sheets sync may need retry.','success');
+      }
+    }).catch(()=>{
+      showToast('Saved locally. Check your Sheets connection.','success');
+    });
+  } else {
+    showToast('Profile updated! Connect Google Sheets to save permanently.','success');
+  }
 }
 
 // ══════════════════════════════════════════════════════════
