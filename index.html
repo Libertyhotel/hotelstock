@@ -696,8 +696,6 @@ function doLogin(){
   const pass=document.getElementById('login-password').value;
   const errEl=document.getElementById('login-error');
 
-  // Compare as strings — Google Sheets can return numbers as Number type
-  // so we convert both sides to string for safe comparison
   const user=DB.users.find(u=>
     u.email.toLowerCase()===email &&
     String(u.password)===String(pass) &&
@@ -715,8 +713,40 @@ function doLogin(){
   document.getElementById('screen-app').classList.add('active');
   setupSidebar();
   nav('dashboard');
-  // Auto-load from Google Sheets on login
-  setTimeout(()=>gsStartup(), 500);
+  // Load OTHER data from Sheets after login (NOT users — already loaded on page open)
+  setTimeout(()=>gsLoadDataOnly(), 500);
+}
+
+// Load all data EXCEPT users from Sheets — users already loaded on page open
+async function gsLoadDataOnly(){
+  if(!GS_CONNECTED||!GS_URL) return;
+  try {
+    const res  = await fetch(GS_URL+'?action=readAll');
+    const json = await res.json();
+    if(!json.success) return;
+    const d=json.data;
+    if(d.hotels    &&d.hotels.length)    DB.hotels    =d.hotels;
+    if(d.vendors   &&d.vendors.length)   DB.vendors   =d.vendors;
+    if(d.coa       &&d.coa.length)       DB.coa       =d.coa;
+    if(d.inventory &&d.inventory.length) DB.inventory =d.inventory;
+    if(d.orders    &&d.orders.length){
+      DB.orders=d.orders.map(o=>{
+        if(typeof o.items==='string'){try{o.items=JSON.parse(o.items);}catch(e){o.items=[];}}
+        return o;
+      });
+    }
+    // Recalculate nextIds
+    nextIds.hotel    = DB.hotels.length    ? Math.max(...DB.hotels.map(x=>Number(x.id)||0))    + 1 : 1;
+    nextIds.inventory= DB.inventory.length ? Math.max(...DB.inventory.map(x=>Number(x.id)||0)) + 1 : 1;
+    nextIds.vendor   = DB.vendors.length   ? Math.max(...DB.vendors.map(x=>Number(x.id)||0))   + 1 : 1;
+    nextIds.coa      = DB.coa.length       ? Math.max(...DB.coa.map(x=>Number(x.id)||0))       + 1 : 1;
+    const sel=document.getElementById('sb-hotel-select');
+    if(sel) sel.innerHTML=DB.hotels.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+    if(sel && currentHotelId) sel.value=currentHotelId;
+    gsSetStatus('saved','Data loaded ✓');
+    nav('dashboard');
+    gsStartPolling();
+  } catch(err){ console.warn('gsLoadDataOnly failed:', err); }
 }
 
 function doLogout(){
@@ -2657,14 +2687,34 @@ let GS_SYNC_TIMER = null;
 let GS_POLL_TIMER = null;
 let GS_LAST_SAVE_TIME = 0; // timestamp of last save — used to skip poll if we just saved
 
-// ── Auto-load data from Sheets on every startup ───────────
+// ── Called on page open — loads users from Sheets so login works with latest passwords ──
 async function gsStartup(){
   if(!GS_URL) return;
   GS_CONNECTED = true;
-  gsSetStatus('syncing','Loading your data from Google Sheets...');
-  await loadFromSheets(true);
-  // Start live polling every 30 seconds
-  gsStartPolling();
+  gsSetStatus('syncing','Connecting...');
+  try {
+    // Only load Users sheet at startup — needed for login
+    const res  = await fetch(GS_URL+'?action=read&sheet=Users');
+    const json = await res.json();
+    if(json.success && json.data && json.data.length){
+      // Merge Sheets users into DB — convert all passwords to strings
+      json.data.forEach(sheetUser=>{
+        sheetUser.password = String(sheetUser.password||'');
+        const idx = DB.users.findIndex(u=>String(u.id)===String(sheetUser.id));
+        if(idx>=0){
+          // Update existing — preserve nothing, use Sheets version for login
+          DB.users[idx] = sheetUser;
+        } else {
+          // New user added in Sheets
+          DB.users.push(sheetUser);
+        }
+      });
+      nextIds.user = DB.users.length ? Math.max(...DB.users.map(x=>Number(x.id)||0)) + 1 : 1;
+    }
+    gsSetStatus('saved','Ready');
+  } catch(err){
+    gsSetStatus('offline','Offline — using local data');
+  }
 }
 
 // ── Live polling — checks for changes every 30 seconds ────
@@ -2946,6 +2996,12 @@ function showToast(msg,type){
 // Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+// On page open — load latest users from Google Sheets BEFORE login
+// This ensures passwords changed in Sheets work on the login screen immediately
+window.addEventListener('load', ()=>{
+  gsStartup();
 });
 </script>
 </body>
