@@ -2671,10 +2671,10 @@ async function gsStartup(){
 function gsStartPolling(){
   clearInterval(GS_POLL_TIMER);
   GS_POLL_TIMER = setInterval(async ()=>{
-    // Skip poll if we saved less than 15 seconds ago — prevents overwriting recent changes
-    if(Date.now() - GS_LAST_SAVE_TIME < 15000) return;
+    // Skip poll if we saved less than 10 seconds ago — prevents overwriting recent changes
+    if(Date.now() - GS_LAST_SAVE_TIME < 10000) return;
     await gsSilentPoll();
-  }, 30000); // every 30 seconds
+  }, 15000); // check every 15 seconds for other users' changes
 }
 
 // ── Silent background poll — loads new data without disrupting UI ──
@@ -2740,11 +2740,11 @@ async function gsSilentPoll(){
 function gsAutoSync(){
   if(!GS_CONNECTED || !GS_URL) return;
   clearTimeout(GS_SYNC_TIMER);
-  gsSetStatus('syncing','Saving to Google Sheets...');
+  gsSetStatus('syncing','Saving...');
   GS_SYNC_TIMER = setTimeout(async ()=>{
     GS_LAST_SAVE_TIME = Date.now();
     await syncToSheets(true);
-  }, 1500);
+  }, 800); // save 0.8 seconds after last change
 }
 
 // ── Status indicator helper ────────────────────────────────
