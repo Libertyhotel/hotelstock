@@ -691,8 +691,16 @@ let nextIds = {hotel:4,user:6,inventory:13,vendor:5,order:5,coa:11};
 function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
-  const user=DB.users.find(u=>u.email.toLowerCase()===email && u.password===pass && u.active);
   const errEl=document.getElementById('login-error');
+
+  // Compare as strings — Google Sheets can return numbers as Number type
+  // so we convert both sides to string for safe comparison
+  const user=DB.users.find(u=>
+    u.email.toLowerCase()===email &&
+    String(u.password)===String(pass) &&
+    u.active
+  );
+
   if(!user){errEl.textContent='Invalid email or password.';errEl.style.display='block';return;}
   errEl.style.display='none';
   currentUser=user;
