@@ -611,11 +611,11 @@ const DB = {
     {id:3,name:'Mountain Lodge',city:'Aspen',country:'USA',stars:'Boutique',rooms:45,currency:'$',phone:'+1 970 000 0003',address:'50 Mountain Rd, Aspen, CO',notes:'Winter seasonal',active:true},
   ],
   users: [
-    {id:1,name:'Super Admin',email:'admin@hotelstock.com',password:'Hs@Adm!n#2025',role:'admin',hotelId:null,phone:'+1 000 0000',active:true,created:'2025-01-01'},
-    {id:2,name:'Sarah Johnson',email:'gm.grandpalace@hotel.com',password:'GpH@Gm#2025!',role:'gm',hotelId:1,phone:'+1 212 111 1111',active:true,created:'2025-01-15'},
-    {id:3,name:'Carlos Rivera',email:'gm.seaview@hotel.com',password:'SvH@Gm#2025!',role:'gm',hotelId:2,phone:'+1 305 222 2222',active:true,created:'2025-01-15'},
-    {id:4,name:'Emma Watson',email:'inv.grandpalace@hotel.com',password:'GpH@Inv#2025!',role:'manager',hotelId:1,phone:'+1 212 333 3333',active:true,created:'2025-02-01'},
-    {id:5,name:'James Kim',email:'inv.seaview@hotel.com',password:'SvH@Inv#2025!',role:'manager',hotelId:2,phone:'+1 305 444 4444',active:true,created:'2025-02-01'},
+    {id:1,name:'Super Admin',email:'admin@hotelstock.com',password:'Admin2025',role:'admin',hotelId:null,phone:'+1 000 0000',active:true,created:'2025-01-01'},
+    {id:2,name:'Sarah Johnson',email:'gm.grandpalace@hotel.com',password:'GrandPalace2025',role:'gm',hotelId:1,phone:'+1 212 111 1111',active:true,created:'2025-01-15'},
+    {id:3,name:'Carlos Rivera',email:'gm.seaview@hotel.com',password:'SeaView2025',role:'gm',hotelId:2,phone:'+1 305 222 2222',active:true,created:'2025-01-15'},
+    {id:4,name:'Emma Watson',email:'inv.grandpalace@hotel.com',password:'InvGP2025',role:'manager',hotelId:1,phone:'+1 212 333 3333',active:true,created:'2025-02-01'},
+    {id:5,name:'James Kim',email:'inv.seaview@hotel.com',password:'InvSV2025',role:'manager',hotelId:2,phone:'+1 305 444 4444',active:true,created:'2025-02-01'},
   ],
   coa: [
     {id:1,code:'5001',name:'Linen & Laundry Expenses',type:'Expense',costCentre:'Housekeeping',gl:'5001-HK',description:'Towels, sheets, pillowcases, laundry'},
@@ -2249,12 +2249,34 @@ function saveAdminProfile(){
   const pass=document.getElementById('set-pass').value;
   const pass2=document.getElementById('set-pass2').value;
   if(!name||!email){showToast('Name and email required','error');return;}
+  if(!email.includes('@')){showToast('Enter a valid email','error');return;}
+  if(pass&&pass.length<6){showToast('Password must be at least 6 characters','error');return;}
   if(pass&&pass!==pass2){showToast('Passwords do not match','error');return;}
-  currentUser.name=name;currentUser.email=email;
-  if(pass) currentUser.password=pass;
+
+  // Update currentUser object
+  currentUser.name=name;
+  currentUser.email=email;
+  if(pass) currentUser.password=String(pass); // always store as string
+
+  // CRITICAL: also update DB.users so it gets saved to Google Sheets
+  const userInDB=DB.users.find(u=>u.id===currentUser.id);
+  if(userInDB){
+    userInDB.name=name;
+    userInDB.email=email;
+    if(pass) userInDB.password=String(pass);
+  }
+
+  // Update sidebar display
   document.getElementById('sb-username').textContent=name;
   document.getElementById('sb-avatar').textContent=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  showToast('Profile updated!','success');
+
+  // Clear password fields
+  document.getElementById('set-pass').value='';
+  document.getElementById('set-pass2').value='';
+
+  // Save to Google Sheets immediately
+  gsAutoSync();
+  showToast('Profile updated and saved to Google Sheets ✅','success');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2625,8 +2647,8 @@ async function gsStartup(){
 function gsStartPolling(){
   clearInterval(GS_POLL_TIMER);
   GS_POLL_TIMER = setInterval(async ()=>{
-    // Skip poll if we saved less than 5 seconds ago (we are the one who changed)
-    if(Date.now() - GS_LAST_SAVE_TIME < 5000) return;
+    // Skip poll if we saved less than 15 seconds ago — prevents overwriting recent changes
+    if(Date.now() - GS_LAST_SAVE_TIME < 15000) return;
     await gsSilentPoll();
   }, 30000); // every 30 seconds
 }
